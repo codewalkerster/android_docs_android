@@ -1,0 +1,115 @@
+From 2801fce0126a132a902631f89dcb7294391a922f Mon Sep 17 00:00:00 2001
+From: Weixin Zhou <zwx@rock-chips.com>
+Date: Wed, 21 Apr 2021 14:37:07 +0800
+Subject: [PATCH] rk3566: add mulit vdd_cpu regulator support
+
+Signed-off-by: Weixin Zhou <zwx@rock-chips.com>
+Change-Id: I5db1f6ef1b58ff361fb5946ec282fe5364a91933
+---
+ .../dts/rockchip/rk3566-rk817-tablet-v10.dts  | 47 ++++++++++++++++++-
+ drivers/cpufreq/cpufreq-dt.c                  |  3 ++
+ drivers/cpufreq/rockchip-cpufreq.c            |  2 +-
+ 3 files changed, 49 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3566-rk817-tablet-v10.dts b/arch/arm64/boot/dts/rockchip/rk3566-rk817-tablet-v10.dts
+index 624d33cd0248..ae78a6c0185c 100755
+--- a/arch/arm64/boot/dts/rockchip/rk3566-rk817-tablet-v10.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3566-rk817-tablet-v10.dts
+@@ -226,7 +226,7 @@
+ 
+ 
+ &cpu0 {
+-	cpu-supply = <&vdd_cpu>;
++	reg-name = "vdd_cpu";
+ };
+ 
+ &csi2_dphy_hw {
+@@ -309,7 +309,7 @@
+ &i2c0 {
+ 	status = "okay";
+ 
+-	vdd_cpu: tcs4525@1c {
++	tcs4525: tcs4525@1c {
+ 		compatible = "tcs,tcs452x";
+ 		reg = <0x1c>;
+ 		vin-supply = <&vccsys>;
+@@ -327,6 +327,49 @@
+ 		};
+ 	};
+ 
++	tcs4526: tcs4526@10 {
++		compatible = "tcs,tcs452x";
++		reg = <0x10>;
++		vin-supply = <&vccsys>;
++		regulator-compatible = "fan53555-reg";
++		regulator-name = "vdd_cpu";
++		regulator-min-microvolt = <712500>;
++		regulator-max-microvolt = <1390000>;
++		regulator-ramp-delay = <2300>;
++		fcs,suspend-voltage-selector = <1>;
++		regulator-boot-on;
++		regulator-always-on;
++		regulator-state-mem {
++			regulator-off-in-suspend;
++		};
++	};
++
++	xz3215: xz3215@60 {
++		compatible = "xz3216";
++		reg = <0x60>;
++		regulators {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			vdd_cpu_1: regulator@0 {
++				reg = <0>;
++				vin-supply = <&vccsys>;
++				regulator-compatible = "xz_dcdc1";
++				regulator-name = "vdd_cpu";
++				regulator-min-microvolt = <603000>;
++				regulator-max-microvolt = <1400000>;
++				regulator-ramp-delay = <1000>;
++				regulator-always-on;
++				regulator-boot-on;
++				fcs,suspend-voltage-selector = <1>;
++				//regulator-initial-mode = <0x1>;
++				regulator-initial-state = <3>;
++				regulator-state-mem {
++					regulator-off-in-suspend;
++				};
++			};
++		};
++	};
++
+ 	rk817: pmic@20 {
+ 		compatible = "rockchip,rk817";
+ 		reg = <0x20>;
+diff --git a/drivers/cpufreq/cpufreq-dt.c b/drivers/cpufreq/cpufreq-dt.c
+index d7e9331a7c8c..b1e5c0f86ec2 100644
+--- a/drivers/cpufreq/cpufreq-dt.c
++++ b/drivers/cpufreq/cpufreq-dt.c
+@@ -105,6 +105,9 @@ static const char *find_supply_name(struct device *dev)
+ 		goto node_put;
+ 	}
+ 
++	if (!(of_property_read_string(dev->of_node, "reg-name", (const char **)&name)))
++		goto node_put;
++
+ 	dev_dbg(dev, "no regulator for cpu%d\n", cpu);
+ node_put:
+ 	of_node_put(np);
+diff --git a/drivers/cpufreq/rockchip-cpufreq.c b/drivers/cpufreq/rockchip-cpufreq.c
+index 206f47335503..381d1ad5bbb9 100644
+--- a/drivers/cpufreq/rockchip-cpufreq.c
++++ b/drivers/cpufreq/rockchip-cpufreq.c
+@@ -293,7 +293,7 @@ static int rockchip_cpufreq_cluster_init(int cpu, struct cluster_info *cluster)
+ 		pp = of_find_property(dev->of_node, "cpu0-supply", NULL);
+ 		if (pp)
+ 			reg_name = "cpu0";
+-		else
++		else if ((of_property_read_string(dev->of_node, "reg-name", (const char **)&reg_name)))
+ 			return -ENOENT;
+ 	}
+ 
+-- 
+2.17.1
+
