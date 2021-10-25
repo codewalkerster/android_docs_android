@@ -1,0 +1,29 @@
+From 294dd63df4b30024b05ffd7c99514114ed1f5c64 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 24 Nov 2021 11:34:53 +0800
+Subject: [PATCH 4/4] fix resume failed by regal mode
+
+Change-Id: I66441479c5becd56f6157dd691b51dddefb9c645
+---
+ einkcompositorworker.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index ed56352..52f2eb0 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -1262,7 +1262,10 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+ 		&& composition->einkMode != EPD_PART_GLR16) {
+   		last_regal = !last_regal;
+ 	      ConvertToY4Dither(composition->fb_handle, composition->einkMode);
+-	      	Y4Commit(EPD_FORCE_FULL);
++		if (composition->einkMode == EPD_RESUME)
++		      	Y4Commit(EPD_RESUME);
++		else
++		      	Y4Commit(EPD_FORCE_FULL);
+ 		return 0;
+   	}
+   }
+-- 
+2.17.1
+

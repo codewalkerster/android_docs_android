@@ -1,0 +1,37 @@
+From a9515746d8b4b2014f95c26c1ec2d932145b8df9 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 13 Oct 2021 10:13:38 +0800
+Subject: [PATCH] rk3566 eink: enable Disk encryption
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I9d81eda5f1d98e172b0509f5ac6f6a5069812a0b
+---
+ rk3566_eink/fstab_eink.in   | 3 ++-
+ rk3566_einkw6/fstab_eink.in | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/rk3566_eink/fstab_eink.in b/rk3566_eink/fstab_eink.in
+index 18e5f0a..0081a5f 100755
+--- a/rk3566_eink/fstab_eink.in
++++ b/rk3566_eink/fstab_eink.in
+@@ -15,4 +15,5 @@ ${_block_prefix}system_ext  /system_ext ext4 ro,barrier=1 ${_flags},first_stage_
+ /devices/platform/*.sata*   auto  vfat defaults voldmanaged=sata:auto
+ # For sdmmc
+ /devices/platform/${_sdmmc_device}/mmc_host*        auto auto defaults voldmanaged=sdcard1:auto
+-/dev/block/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,inlinecrypt,reserve_root=32768,resgid=1065 latemount,wait,check,quota,formattable,reservedsize=128M
++#/dev/block/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,inlinecrypt,reserve_root=32768,resgid=1065 latemount,wait,check,quota,formattable,reservedsize=128M
++/dev/block/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,reserve_root=32768,resgid=1065 latemount,wait,check,fileencryption=software,quota,formattable,reservedsize=128M,checkpoint=fs
+diff --git a/rk3566_einkw6/fstab_eink.in b/rk3566_einkw6/fstab_eink.in
+index 18e5f0a..0081a5f 100755
+--- a/rk3566_einkw6/fstab_eink.in
++++ b/rk3566_einkw6/fstab_eink.in
+@@ -15,4 +15,5 @@ ${_block_prefix}system_ext  /system_ext ext4 ro,barrier=1 ${_flags},first_stage_
+ /devices/platform/*.sata*   auto  vfat defaults voldmanaged=sata:auto
+ # For sdmmc
+ /devices/platform/${_sdmmc_device}/mmc_host*        auto auto defaults voldmanaged=sdcard1:auto
+-/dev/block/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,inlinecrypt,reserve_root=32768,resgid=1065 latemount,wait,check,quota,formattable,reservedsize=128M
++#/dev/block/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,inlinecrypt,reserve_root=32768,resgid=1065 latemount,wait,check,quota,formattable,reservedsize=128M
++/dev/block/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,reserve_root=32768,resgid=1065 latemount,wait,check,fileencryption=software,quota,formattable,reservedsize=128M,checkpoint=fs
+-- 
+2.17.1
+

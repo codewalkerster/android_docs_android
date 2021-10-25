@@ -1,0 +1,46 @@
+From a5e751494349bfd441971910491df42135daed77 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 20 Oct 2021 15:34:09 +0800
+Subject: [PATCH 2/2] hwc_adajust_sf_vsync: fix vsync count maybe always 29
+ after resume
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I8250eea56cc6d3f226d8ab62846723f2d4aca696
+---
+ hwcomposer.cpp | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index e086eb4..e2ca2c4 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -2297,8 +2297,13 @@ static int hwc_adajust_sf_vsync(int mode){
+   if ((last_mode == EPD_SUSPEND) && (mode != EPD_RESUME))
+     return 0;
+ 
+-  if (last_mode == EPD_RESUME && resume_count--)
++  if ((last_mode == EPD_RESUME) && (mode == EPD_SUSPEND))
++    resume_count = 0;
++
++  if ((last_mode == EPD_RESUME) && (resume_count > 0)) {
++    resume_count--;
+     return 0;
++  }
+ 
+   if(mode == last_mode)
+     return 0;
+@@ -2514,10 +2519,10 @@ static int hwc_set_power_mode(struct hwc_composer_device_1 *dev, int display,
+      break;
+     case HWC_POWER_MODE_DOZE_SUSPEND:
+     case HWC_POWER_MODE_NORMAL:
+-      ALOGD("%s,line = %d , mode = %d , gPowerMode = %d,gCurrentEpdMode = %d",__FUNCTION__,__LINE__,mode,gPowerMode,gCurrentEpdMode);
+       gPowerMode = EPD_RESUME;
+       gCurrentEpdMode = EPD_FULL_GC16;
+       not_fullmode_count = 50;
++      ALOGD("%s,line = %d , mode = %d , gPowerMode = %d,gCurrentEpdMode = %d",__FUNCTION__,__LINE__,mode,gPowerMode,gCurrentEpdMode);
+       hwc_adajust_sf_vsync(EPD_RESUME);
+       break;
+   }
+-- 
+2.17.1
+

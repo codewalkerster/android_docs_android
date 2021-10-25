@@ -1,4 +1,57 @@
-补丁说明：
+rkr7_patches2补丁说明：
+
+lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
+.
+├── bootable
+│   └── recovery
+│       └── 0001-eink-minui-update-to-match-kernel-defined.patch   更新结构体定义，与最新的kernel ebc驱动匹配
+├── device
+│   └── rockchip
+│       └── rk356x
+│           ├── 0001-rk3566-eink-use-gamma-property-to-do-contrast-contro.patch    新对比度调节方法相关补丁
+│           ├── 0002-rk3566_eink-build-64bit-android-platform.patch                编译64位的android系统，与此前提供的64bit补丁一致，需要64bit系统的可以选择打上，否则忽略；
+│           └── 0003-rk3566-eink-enable-Disk-encryption.patch                      打开磁盘加密，可以提高antutu跑分，对实际性能没有影响，新项目可以考虑打上补丁；
+                                                                                   由于补丁改变了磁盘数据格式，旧项目之前没有使能磁盘加密的，现在打开的话，ota会失败，不建议旧项目使用；
+├── frameworks
+│   ├── base
+│   │   └── 0001-EINK-use-new-way-to-control-Contrast.patch                        新对比度调节方法相关补丁
+│   └── native
+│       └── 0001-Feature-Support-Gamma-calibration.patch                           新对比度调节方法相关补丁
+├── hardware
+│   └── rockchip
+│       └── hwcomposer
+│           └── einkhwc
+│               ├── 0001-use-debug.sf.gamma.gamma-to-do-contrast-control-on-S.patch   新对比度调节方法相关补丁
+│               ├── 0002-Remove-unnecessary-include-mali_gralloc_formats.h-an.patch   去除无用代码
+│               ├── 0003-hwc_adajust_sf_vsync-fix-vsync-count-maybe-always-29.patch   解决唤醒后，系统概率变慢问题
+│               ├── 0004-fix-weifeng-color-panel.patch                                威锋彩屏补丁
+│               ├── 0005-DrmEink-Solve-the-risk-of-a-null-pointer-exception.patch     规避极低概率的空指针问题
+│               ├── 0006-fix-Rgb888ToGray16ByRga-when-logo-display.patch              解决logo显示时灰度损失问题
+│               ├── 0007-support-regal-mode-for-eink-panel.patch                      支持元太regal去残影功能，需要元太libeink.so和5bit波形文件支持，只有GLR和GLD模式支持regal刷新
+│               ├── 0008-regal-use-y4-commit-to-do-out-regal-mode.patch               regal相关补丁
+│               └── 0009-fix-resume-failed-by-regal-mode.patch                        regal相关补丁
+├── kernel
+│   ├── 0001-mfd-rk808-disable-rk817-int-when-shutdown.patch                          更新rkr7_patches中的补丁0007-drivers-mfd-rk808-disable-rk817-int-when-shutdown.patch
+│   ├── 0002-drm-rockchip-ebc_dev-release-version-v2.13.patch                         ebc驱动更新，解决EPD_AUTO刷新不全问题
+│   ├── 0003-drm-rockchip-ebc_dev-release-version-v2.14.patch                         ebc驱动更新，过滤唤醒时的黑帧
+│   ├── 0004-arm64-dts-rockchip-rk3566-eink-reserve-ebc-framebuff.patch               regal相关补丁，增大framebuff size，支持regal模式
+│   ├── 0005-drm-rockchip-ebc_dev-release-version-v2.15.patch                         regal相关补丁，ebc驱动更新，支持regal 5bit波形文件
+│   ├── 0006-drm-rockchip-ebc_dev-release-version-v2.16.patch                         regal相关补丁，ebc驱动更新，解决regal的个别问题
+│   └── 0007-drm-rockchip-ebc_dev-release-version-v2.17.patch                         regal相关补丁，ebc驱动更新，解决regal的个别问题
+├── packages
+│   └── apps
+│       └── NoteDemo
+│           └── 0001-paintworker-update-to-match-kernel-defined.patch                 更新结构体定义，与最新的kernel ebc驱动匹配
+└── rkbin
+    ├── 0001-rk3566-bl31-ultra-update-version-to-v2.10.patch                          bl31 bin更新，稳定性与功耗相关问题
+    ├── 0002-rk3566-ddr-update-ultra-ddr-bin-to-v1.09.patch                           ddr bin更新，稳定性与功耗相关问题
+    └── 0003-rk3566-bl31-ultra-update-version-to-v2.11.patch                          bl31 bin更新，解决v2.10 bl31 bin唤醒变慢的问题
+
+17 directories, 26 files
+
+--------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
+rkr7_patches补丁说明：
 
 lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook$ tree
 .

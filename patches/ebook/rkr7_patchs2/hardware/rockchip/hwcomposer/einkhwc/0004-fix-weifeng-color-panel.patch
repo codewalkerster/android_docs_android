@@ -1,0 +1,45 @@
+From a41e8d4c6751529d56d26d8d3dfbb64065683bc9 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Thu, 28 Oct 2021 11:22:58 +0800
+Subject: [PATCH 1/2] fix weifeng color panel
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Iebbdb58126f994022c14b525a1d8f8fbf3fa8dae
+---
+ hwcomposer.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index e2ca2c4..b0c4b56 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -1747,7 +1747,7 @@ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int
+ 		src_r1 = src;
+ 		src_r2 = src + vir_width;
+ 		int row_mod3 = i % 3;
+-		if (row_mod3 == 0) {
++		if (row_mod3 == 1) {
+ 			for (j = 0; j < w_div6; j++) {
+ 				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+ 				*dst_r1++ = r | (b<<4);
+@@ -1759,7 +1759,7 @@ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int
+ 				*dst_r1++ = b | (g<<4);
+ 				*dst_r2++ = r | (b<<4);
+ 			}
+-		} else if (row_mod3 == 1) {
++		} else if (row_mod3 == 2) {
+ 			for (j = 0; j < w_div6; j++) {
+ 				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+ 				*dst_r1++ = b | (g<<4);
+@@ -1771,7 +1771,7 @@ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int
+ 				*dst_r1++ = g | (r<<4);
+ 				*dst_r2++ = b | (g<<4);
+ 			}
+-		} else if (row_mod3 == 2) {
++		} else if (row_mod3 == 0) {
+ 			for (j = 0; j < w_div6; j++) {
+ 				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+ 				*dst_r1++ = g | (r<<4);
+-- 
+2.17.1
+

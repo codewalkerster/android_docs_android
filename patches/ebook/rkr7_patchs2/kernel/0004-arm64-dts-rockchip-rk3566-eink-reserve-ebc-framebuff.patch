@@ -1,0 +1,28 @@
+From c5fc8738578d3a96f6044d87139da8a36bf2a81b Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Tue, 23 Nov 2021 17:57:17 +0800
+Subject: [PATCH] arm64: dts: rockchip: rk3566-eink: reserve ebc framebuff size
+ 44M
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Ic6be7988d78de4231f7325f67a55162cb15c65cc
+---
+ arch/arm64/boot/dts/rockchip/rk3566-eink.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3566-eink.dtsi b/arch/arm64/boot/dts/rockchip/rk3566-eink.dtsi
+index 3e8c8295e5b66..c8686892d1129 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3566-eink.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3566-eink.dtsi
+@@ -14,7 +14,7 @@
+ 		};
+ 
+ 		display_reserved: framebuffer@10900000 {
+-			reg = <0x0 0x10900000 0x0 0x2000000>;
++			reg = <0x0 0x10900000 0x0 0x2c00000>;
+ 		};
+ 	};
+ 
+-- 
+2.17.1
+

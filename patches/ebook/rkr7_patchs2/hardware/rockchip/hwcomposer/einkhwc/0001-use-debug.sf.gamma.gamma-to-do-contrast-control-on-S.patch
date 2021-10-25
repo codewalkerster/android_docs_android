@@ -1,0 +1,43 @@
+From b16fcc187790cdc40699a4e8d894bca6123b31c1 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 13 Oct 2021 09:48:54 +0800
+Subject: [PATCH] use debug.sf.gamma.gamma to do contrast control on SF
+
+persist.vendor.hwc.contrast_key no use more
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I0958d49c27ff0efef96bba76e5f0c9492e6bfed3
+---
+ einkcompositorworker.cpp | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index 5a81346..1340a10 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -502,16 +502,20 @@ int EinkCompositorWorker::Rgba888ToGray16ByRga(int *output_buffer, const buffer_
+ 		dst.dither.mode = 0;
+ 
+     //A2,DU only support two greys(f,0), DU4 support greys(f,a,5,0), others support 16 greys
+-    uint64_t contrast_key =0;
++    uint64_t contrast_key =0xfedcba9876543210;
+     if ((epd_mode == EPD_A2) || (epd_mode == EPD_DU) || (epd_mode == EPD_AUTO_DU)) {
+         contrast_key = 0xffffff0000000000;
+     } else if ((epd_mode == EPD_DU4) || (epd_mode == EPD_AUTO_DU4)) {
+         contrast_key = 0xfffffaaa55500000;
+-    } else {
++    }
++//使用新的对比度调节方法debug.sf.gamma.gamma，不再使用persist.vendor.hwc.contrast_key属性
++/*
++    else {
+         char value[PROPERTY_VALUE_MAX];
+         property_get("persist.vendor.hwc.contrast_key",value,"0xffccba9876540000");
+         sscanf(value,"%" PRIx64,&contrast_key);
+     }
++*/
+     dst.dither.lut0_l = (contrast_key & 0xffff);
+     dst.dither.lut0_h = (contrast_key & 0xffff0000) >> 16;
+     dst.dither.lut1_l = (contrast_key & 0xffff00000000) >> 32;
+-- 
+2.17.1
+

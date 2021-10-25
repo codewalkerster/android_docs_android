@@ -1,0 +1,182 @@
+From ead35f24e70048987f44fa21ef63d59b45b5bec0 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Thu, 14 Oct 2021 16:50:34 +0800
+Subject: [PATCH] EINK: use new way to control Contrast
+
+system use debug.sf.gamma.gamma property to control contrast, value
+from 0.1 to 2
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I2839a811d23e1a037f1bc1fc0c076d8281c4dc4f
+---
+ .../SystemUI/res/layout/eink_menu_dialog.xml  |  2 +-
+ .../systemui/statusbar/phone/EinkDialog.java  | 24 ++++++-------------
+ .../phone/EinkSettingsDataBaseHelper.java     |  2 +-
+ .../statusbar/phone/EinkSettingsProvider.java | 21 ++++++----------
+ 4 files changed, 16 insertions(+), 33 deletions(-)
+ mode change 100644 => 100755 packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkDialog.java
+ mode change 100644 => 100755 packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsDataBaseHelper.java
+ mode change 100644 => 100755 packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
+
+diff --git a/packages/SystemUI/res/layout/eink_menu_dialog.xml b/packages/SystemUI/res/layout/eink_menu_dialog.xml
+index db63aed736eb..419ef2dfddc1 100644
+--- a/packages/SystemUI/res/layout/eink_menu_dialog.xml
++++ b/packages/SystemUI/res/layout/eink_menu_dialog.xml
+@@ -124,7 +124,7 @@
+             android:layout_width="200dp"
+             android:layout_height="wrap_content"
+             android:maxHeight="2dp"
+-            android:max="80"
++            android:max="20"
+             android:layout_marginRight="30dp"
+             android:layout_alignParentRight="true" />
+         <CheckBox
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkDialog.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkDialog.java
+old mode 100644
+new mode 100755
+index e7270d950196..b1b7e1700f3f
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkDialog.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkDialog.java
+@@ -96,7 +96,7 @@ public class EinkDialog extends EinkBaseDialog implements View.OnClickListener,
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.eink_menu_dialog);
+         NavigationBarFragment.isShowEinkDialog = true;
+-        if(mEinkSettingsManager == null) {
++        if (mEinkSettingsManager == null) {
+             mEinkSettingsManager = new EinkSettingsManager(mContext);
+         }
+         if (mPackageManager == null) {
+@@ -120,7 +120,7 @@ public class EinkDialog extends EinkBaseDialog implements View.OnClickListener,
+         mContrastCheckbox.setChecked(EinkSettingsProvider.isContrastSetting);
+         mContrastSeekbar = (SeekBar) findViewById(R.id.eink_dialog_contrast_seekbar);
+         mContrastSeekbar.setOnSeekBarChangeListener(this);
+-        mContrastSeekbar.setProgress(EinkSettingsProvider.contrast);
++        mContrastSeekbar.setProgress((int)EinkSettingsProvider.contrast * 10);
+         mContrastSeekbar.setEnabled(mContrastCheckbox.isChecked());
+         //刷新设置
+         mRefreshCheckbox = (CheckBox) findViewById(R.id.eink_dialog_refresh_checkbox);
+@@ -170,7 +170,7 @@ public class EinkDialog extends EinkBaseDialog implements View.OnClickListener,
+             }
+         } else if(id == R.id.eink_dialog_animation_seekbar) {
+         } else if(id == R.id.eink_dialog_contrast_seekbar) {
+-            EinkSettingsProvider.contrast = seekBar.getProgress();
++            EinkSettingsProvider.contrast = (float)seekBar.getProgress() / 10;
+             mContrastText.setText(String.valueOf(EinkSettingsProvider.contrast));
+         }
+     }
+@@ -206,13 +206,8 @@ public class EinkDialog extends EinkBaseDialog implements View.OnClickListener,
+         } else if(id == R.id.eink_dialog_animation_seekbar) {
+         } else if(id == R.id.eink_dialog_contrast_seekbar) {
+             //设置对比度
+-            if(EinkSettingsProvider.contrast == 0) {
+-                mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.INIT_PROGRASS_CONTRAST);
+-            }else {
+-                EinkSettingsProvider.strContrast = mEinkSettingsManager.convertArrayToString(
+-                        mEinkSettingsManager.convertLevelToArray(EinkSettingsProvider.contrast));
+-                mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.strContrast);
+-            }
++            EinkSettingsProvider.strContrast = String.valueOf(EinkSettingsProvider.contrast);
++            mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.strContrast);
+             //把对比度更新到数据库
+             ContentValues values = new ContentValues();
+             values.put(EinkSettingsDataBaseHelper.APP_CONTRAST, EinkSettingsProvider.contrast);
+@@ -289,13 +284,8 @@ public class EinkDialog extends EinkBaseDialog implements View.OnClickListener,
+                     values, EinkSettingsDataBaseHelper.PACKAGE_NAME + " = ?",
+                     new String[]{EinkSettingsProvider.packageName});
+             if(EinkSettingsProvider.isContrastSetting) {
+-                if(EinkSettingsProvider.contrast == 0) {
+-                    mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.INIT_PROGRASS_CONTRAST);
+-                } else {
+-                    EinkSettingsProvider.strContrast = mEinkSettingsManager.convertArrayToString(
+-                            mEinkSettingsManager.convertLevelToArray(EinkSettingsProvider.contrast));
+-                    mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.strContrast);
+-                }
++                EinkSettingsProvider.strContrast = String.valueOf(EinkSettingsProvider.contrast);
++                mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.strContrast);
+             } else {
+                 mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, EinkSettingsProvider.SYS_CONTRAST);
+             }
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsDataBaseHelper.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsDataBaseHelper.java
+old mode 100644
+new mode 100755
+index 337e781e7b30..1f9355e398c5
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsDataBaseHelper.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsDataBaseHelper.java
+@@ -43,7 +43,7 @@ public class EinkSettingsDataBaseHelper extends SQLiteOpenHelper {
+                 REFRESH_FREQUENCY + " integer default '-1', " +
+                 /** 对比度设置*/
+                 IS_CONTRAST_SETTING + " integer default '0', " +
+-                APP_CONTRAST + " integer default '0', " +
++                APP_CONTRAST + " real default '0', " +
+                 /** 动画过滤 */
+                 APP_ANIM_FILTER + " integer default '0', " +
+                 /** 应用漂白 */
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
+old mode 100644
+new mode 100755
+index 85fb2aeaba95..63ed44b4f1da
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
+@@ -27,12 +27,11 @@ public class EinkSettingsProvider extends ContentProvider {
+     private static final String TAG = "EinkSettingsProvider";
+     public static final int EINKSETTINGS = 0;
+     public static final int EINKSETTINGS_UPDATE = 1;
+-    public static final String INIT_PROGRASS_CONTRAST = "0xfedcba9876543210";
+     public static final String INIT_DPI_PROPERTY = "ro.sf.lcd_density";
+     public static String packageName = "";
+     public static final String EINK_REFRESH_FREQUENCY = "persist.vendor.fullmode_cnt";
+-    public static final String EINK_CONTRAST = "persist.vendor.hwc.contrast_key";
+-    public static final String Eink_SYS_CONTRAST = "persist.sys.contrast_key";
++    public static final String EINK_CONTRAST = "debug.sf.gamma.gamma";
++    public static final String Eink_SYS_CONTRAST = "persist.sys.gamma.level";
+     public static final String AUTHORITY = "com.android.systemui.eink";
+     public static final String EINKSETTINGS_TABLE = "EinkSettings";
+     public static final Uri URI_EINK_SETTINGS = Uri.parse("content://com.android.systemui.eink/einksettings");
+@@ -40,7 +39,7 @@ public class EinkSettingsProvider extends ContentProvider {
+     public static int DPI;
+     public static int refreshMode;
+     public static int refreshFrequency;
+-    public static int contrast;
++    public static float contrast;
+     public static String strContrast;
+     public static String SYS_CONTRAST;
+     public static boolean isDpiSetting;
+@@ -127,7 +126,7 @@ public class EinkSettingsProvider extends ContentProvider {
+                             refreshFrequency =  refreshFrequencyFromDB == -1 ?
+                                     EinkSettingsDataBaseHelper.INIT_REFRESH_FREQUENCY : refreshFrequencyFromDB;
+                             //对比度设置
+-                            contrast = cursor.getInt(cursor.getColumnIndex(
++                            contrast = cursor.getFloat(cursor.getColumnIndex(
+                                     EinkSettingsDataBaseHelper.APP_CONTRAST));
+                             isContrastSetting = 1 == cursor.getInt(cursor.getColumnIndex(
+                                     EinkSettingsDataBaseHelper.IS_CONTRAST_SETTING));
+@@ -150,7 +149,7 @@ public class EinkSettingsProvider extends ContentProvider {
+                         DPI = INIT_PROGRASS_DPI;
+                         isDpiSetting = false;
+                         isContrastSetting = false;
+-                        contrast = 0;
++                        contrast = Float.valueOf(mEinkSettingsManager.getProperty(Eink_SYS_CONTRAST));
+                         isRefreshSetting = false;
+                         refreshMode = Integer.valueOf(EinkManager.EinkMode.EPD_PART_GC16);
+                         refreshFrequency = EinkSettingsDataBaseHelper.INIT_REFRESH_FREQUENCY;
+@@ -164,15 +163,9 @@ public class EinkSettingsProvider extends ContentProvider {
+                     if(!isDpiSetting)
+                         mPackageManager.setAppDpiToMap(packageName, -1);
+                     if(isContrastSetting) {
+-                        //对比度数值为0时，使用0xfedcba9876543210
+-                        if(contrast == 0) {
+-                            mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, INIT_PROGRASS_CONTRAST);
+-                        } else {
+-                            strContrast = mEinkSettingsManager.convertArrayToString(mEinkSettingsManager.convertLevelToArray(contrast));
+-                            mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, strContrast);
+-                        }
++                        strContrast = String.valueOf(contrast);
++                        mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, strContrast);
+                     } else {
+-                        //未开启对比度开关时，使用系统对比度0xffccba9876543000
+                         mEinkSettingsManager.setProperty(EinkSettingsProvider.EINK_CONTRAST, SYS_CONTRAST);
+                     }
+                     //刷新设置开启下才设置
+-- 
+2.17.1
+

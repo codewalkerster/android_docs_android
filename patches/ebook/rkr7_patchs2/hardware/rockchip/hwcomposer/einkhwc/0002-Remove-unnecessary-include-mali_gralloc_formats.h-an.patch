@@ -1,0 +1,187 @@
+From 7850faa05d71949f9754881b13ec1d54aa211e21 Mon Sep 17 00:00:00 2001
+From: Zhen Chen <chenzhen@rock-chips.com>
+Date: Fri, 15 Oct 2021 11:42:19 +0800
+Subject: [PATCH 1/2] Remove unnecessary '#include "mali_gralloc_formats.h"'
+ and relative unused source codes
+
+Change-Id: I439fd04e170f66f26a877e0f7d88882f30f78740
+---
+ drmgralloc4.cpp  | 75 +-----------------------------------------------
+ drmgralloc4.h    |  5 ----
+ hwc_rockchip.cpp | 29 -------------------
+ hwc_rockchip.h   |  3 --
+ 4 files changed, 1 insertion(+), 111 deletions(-)
+
+diff --git a/drmgralloc4.cpp b/drmgralloc4.cpp
+index 5f22dc7..602feda 100755
+--- a/drmgralloc4.cpp
++++ b/drmgralloc4.cpp
+@@ -54,8 +54,8 @@
+ #define ENABLE_DEBUG_LOG
+ 
+ #include <sync/sync.h>
++#include <cutils/log.h>
+ 
+-#include "mali_gralloc_formats.h"
+ #include <drm_fourcc.h>
+ 
+ #include "platform_gralloc4.h"
+@@ -177,61 +177,6 @@ static int get_metadata(IMapper &mapper, buffer_handle_t handle, IMapper::Metada
+ 	return err;
+ }
+ 
+-/*
+- * 参考 b_r25p1 gralloc 中的 drm_fourcc_from_handle() 实现.
+- * 目前未考虑 'modifier'
+- */
+-uint64_t get_internal_format_from_fourcc(uint32_t fourcc, uint64_t modifier)
+-{
+-    /* Clean the modifier bits in the internal format. */
+-    struct table_entry
+-    {
+-        uint64_t internal; // 不带 modifier_bits
+-        uint32_t fourcc;
+-    };
+-
+-    static table_entry table[] = {
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RAW16, DRM_FORMAT_R16 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RGBA_8888, DRM_FORMAT_ABGR8888 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_BGRA_8888, DRM_FORMAT_ARGB8888 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RGB_565, DRM_FORMAT_RGB565 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RGBX_8888, DRM_FORMAT_XBGR8888 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RGB_888, DRM_FORMAT_BGR888 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RGBA_1010102, DRM_FORMAT_ABGR2101010 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_RGBA_16161616, DRM_FORMAT_ABGR16161616F },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_YV12, DRM_FORMAT_YVU420 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_NV12, DRM_FORMAT_NV12 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_NV16, DRM_FORMAT_NV16 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_NV21, DRM_FORMAT_NV21 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_Y0L2, DRM_FORMAT_Y0L2 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_Y210, DRM_FORMAT_Y210 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_P010, DRM_FORMAT_P010 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_P210, DRM_FORMAT_P210 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_Y410, DRM_FORMAT_Y410 },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_YUV422_8BIT, DRM_FORMAT_YUYV },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_YUV420_8BIT_I, DRM_FORMAT_YUV420_8BIT },
+-        { MALI_GRALLOC_FORMAT_INTERNAL_YUV420_10BIT_I, DRM_FORMAT_YUV420_10BIT },
+-
+-        /* Deprecated legacy formats, mapped to MALI_GRALLOC_FORMAT_INTERNAL_YUV422_8BIT. */
+-        { HAL_PIXEL_FORMAT_YCbCr_422_I, DRM_FORMAT_YUYV },
+-        /* Deprecated legacy formats, mapped to MALI_GRALLOC_FORMAT_INTERNAL_NV21. */
+-        { HAL_PIXEL_FORMAT_YCrCb_420_SP, DRM_FORMAT_NV21 },
+-        /* Format introduced in Android P, mapped to MALI_GRALLOC_FORMAT_INTERNAL_P010. */
+-        { HAL_PIXEL_FORMAT_YCBCR_P010, DRM_FORMAT_P010 },
+-    };
+-
+-    for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++)
+-    {
+-        if (table[i].fourcc == fourcc)
+-        {
+-            return table[i].internal;
+-        }
+-    }
+-
+-    LOG_ALWAYS_FATAL("unexpected fourcc : 0x%x", fourcc);
+-    return 0;
+-}
+-
+ android::status_t static decodeArmPlaneFds(const hidl_vec<uint8_t>& input, std::vector<int64_t>* fds)
+ {
+     assert (fds != nullptr);
+@@ -256,24 +201,6 @@ android::status_t static decodeArmPlaneFds(const hidl_vec<uint8_t>& input, std::
+  * ---------------------------------------------------------------------------------------------------------
+  */
+ 
+-uint64_t get_internal_format(buffer_handle_t handle)
+-{
+-    auto &mapper = get_service();
+-    uint32_t fourcc;
+-    uint64_t modifier;
+-
+-    /* 获取 format_fourcc. */
+-    int err = get_metadata(mapper, handle, MetadataType_PixelFormatFourCC, decodePixelFormatFourCC, &fourcc);
+-    assert(err == android::NO_ERROR);
+-
+-    /* 获取 format_modifier. */
+-    err = get_metadata(mapper, handle, MetadataType_PixelFormatModifier, decodePixelFormatModifier, &modifier);
+-    assert(err == android::NO_ERROR);
+-
+-    /* 从 fourcc 得到 internal_format. */
+-    return (get_internal_format_from_fourcc(fourcc, modifier) );
+-}
+-
+ int get_width(buffer_handle_t handle, uint64_t* width)
+ {
+     auto &mapper = get_service();
+diff --git a/drmgralloc4.h b/drmgralloc4.h
+index 4e31203..583037e 100755
+--- a/drmgralloc4.h
++++ b/drmgralloc4.h
+@@ -73,11 +73,6 @@ namespace gralloc4 {
+  * ---------------------------------------------------------------------------------------------------------
+  */
+ 
+-/*
+- * 获取 'handle' 引用的 graphic_buffer 的 internal_format.
+- */
+-uint64_t get_internal_format(buffer_handle_t handle);
+-
+ int get_width(buffer_handle_t handle, uint64_t* width);
+ 
+ int get_height(buffer_handle_t handle, uint64_t* height);
+diff --git a/hwc_rockchip.cpp b/hwc_rockchip.cpp
+index 371b9c8..4df8104 100755
+--- a/hwc_rockchip.cpp
++++ b/hwc_rockchip.cpp
+@@ -482,34 +482,5 @@ int hwc_get_handle_primefd(buffer_handle_t hnd)
+     return fd;
+ #endif
+ }
+-
+-#if RK_DRM_GRALLOC
+-uint32_t hwc_get_handle_phy_addr(buffer_handle_t hnd)
+-{
+-#if USE_GRALLOC_4
+-    uint64_t internal_format = 0;
+-    internal_format = gralloc4::get_internal_format(hnd);
+-    return internal_format;
+-#else // #if USE_GRALLOC_4
+-
+-    int ret = 0;
+-    int op = GRALLOC_MODULE_PERFORM_GET_HADNLE_PHY_ADDR;
+-    uint32_t phy_addr = 0;
+-
+-    if(gralloc && gralloc->perform)
+-        ret = gralloc->perform(gralloc, op, hnd, &phy_addr);
+-    else
+-        ret = -EINVAL;
+-
+-    if(ret != 0)
+-    {
+-        ALOGE("%s:cann't get value from gralloc", __FUNCTION__);
+-    }
+-
+-    return phy_addr;
+-#endif
+-}
+-#endif
+-
+ }
+ 
+diff --git a/hwc_rockchip.h b/hwc_rockchip.h
+index 9d76871..ec08884 100755
+--- a/hwc_rockchip.h
++++ b/hwc_rockchip.h
+@@ -195,9 +195,6 @@ int hwc_get_handle_size(buffer_handle_t hnd);
+ int hwc_get_handle_attributes(buffer_handle_t hnd, std::vector<int> *attrs);
+ int hwc_get_handle_attibute(buffer_handle_t hnd, attribute_flag_t flag);
+ int hwc_get_handle_primefd(buffer_handle_t hnd);
+-#if RK_DRM_GRALLOC
+-uint32_t hwc_get_handle_phy_addr(buffer_handle_t hnd);
+-#endif
+ void hwc_list_nodraw(hwc_display_contents_1_t  *list);
+ void hwc_sync_release(hwc_display_contents_1_t  *list);
+ 
+-- 
+2.17.1
+

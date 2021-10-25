@@ -1,0 +1,50 @@
+From c82ec919a1d7a223d87e31b6f2a62be06a046e99 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 13 Oct 2021 10:11:34 +0800
+Subject: [PATCH] rk3566 eink: use gamma property to do contrast control
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I90196fdb8cdc1f0b82a9caf5891f7ff0c88a87ba
+---
+ rk3566_eink/rk3566_eink.mk       | 2 +-
+ rk3566_einkw6/rk3566_einkw6.mk   | 2 +-
+ sepolicy_ebook/property_contexts | 2 ++
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/rk3566_eink/rk3566_eink.mk b/rk3566_eink/rk3566_eink.mk
+index 4f5e34e..28829ec 100644
+--- a/rk3566_eink/rk3566_eink.mk
++++ b/rk3566_eink/rk3566_eink.mk
+@@ -72,5 +72,5 @@ PRODUCT_PROPERTY_OVERRIDES += ro.sf.lcd_density=320 \
+                               sys.eink.rgba2y4_by_rga=1 \
+                               persist.sys.idle-wakeup=false \
+                               persist.sys.idle-delay=5000 \
+-                              persist.sys.contrast_key=0xffccba9876543000 \
++                              persist.sys.gamma.level=0.5 \
+                               sys.eink.recovery.eink_fb = true
+diff --git a/rk3566_einkw6/rk3566_einkw6.mk b/rk3566_einkw6/rk3566_einkw6.mk
+index 6103aae..1bc3209 100644
+--- a/rk3566_einkw6/rk3566_einkw6.mk
++++ b/rk3566_einkw6/rk3566_einkw6.mk
+@@ -71,5 +71,5 @@ PRODUCT_PROPERTY_OVERRIDES += ro.sf.lcd_density=210 \
+                               sys.eink.rgba2y4_by_rga=1 \
+                               persist.sys.idle-wakeup=false \
+                               persist.sys.idle-delay=5000 \
+-                              persist.sys.contrast_key=0xffccba9876543000 \
++                              persist.sys.gamma.level=0.5 \
+                               sys.eink.recovery.eink_fb = true
+diff --git a/sepolicy_ebook/property_contexts b/sepolicy_ebook/property_contexts
+index cc0dcdc..2ff7bab 100644
+--- a/sepolicy_ebook/property_contexts
++++ b/sepolicy_ebook/property_contexts
+@@ -1,5 +1,7 @@
+ debug.eink.                     u:object_r:vendor_ebook_prop:s0
+ debug.dump                      u:object_r:vendor_ebook_prop:s0
++debug.sf.gamma.gamma            u:object_r:vendor_ebook_prop:s0
++persist.sys.gamma.level         u:object_r:vendor_ebook_prop:s0
+ hwc.drm.use_framebuffer_cache   u:object_r:vendor_ebook_prop:s0
+ persist.sys.refresh_skip_count  u:object_r:vendor_ebook_prop:s0
+ persist.vendor.fullmode_cnt     u:object_r:vendor_ebook_prop:s0
+-- 
+2.17.1
+

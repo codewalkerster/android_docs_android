@@ -1,0 +1,29 @@
+From 5ca327da7e542ecc360b7d793787395d5b6a54cb Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Tue, 23 Nov 2021 17:05:12 +0800
+Subject: [PATCH 3/4] regal: use y4 commit to do out regal mode
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Ide9f4feaab3a5802fbe5492e2b7776dddf10bcf1
+---
+ einkcompositorworker.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index ace9dbc..ed56352 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -1261,8 +1261,8 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+ 		&& composition->einkMode != EPD_PART_GLD16
+ 		&& composition->einkMode != EPD_PART_GLR16) {
+   		last_regal = !last_regal;
+-		InToOrOutY8Regal(composition->fb_handle);
+-      		EinkCommit(EPD_FORCE_FULL);
++	      ConvertToY4Dither(composition->fb_handle, composition->einkMode);
++	      	Y4Commit(EPD_FORCE_FULL);
+ 		return 0;
+   	}
+   }
+-- 
+2.17.1
+

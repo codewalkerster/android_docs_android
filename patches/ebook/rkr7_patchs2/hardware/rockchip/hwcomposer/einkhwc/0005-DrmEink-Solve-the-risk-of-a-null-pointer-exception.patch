@@ -1,0 +1,110 @@
+From f208a8403e6d0ebd4dac5d57c48b00ee69eb89b3 Mon Sep 17 00:00:00 2001
+From: libin <bin.li@rock-chips.com>
+Date: Thu, 28 Oct 2021 10:55:23 +0800
+Subject: [PATCH 2/2] DrmEink : Solve the risk of a null pointer exception.
+
+Solve the possible null pointer problem caused by lock failure
+
+Signed-off-by: libin <bin.li@rock-chips.com>
+Change-Id: Id4feb89903512e84a68007c49df308b77a181f79
+---
+ einkcompositorworker.cpp | 41 ++++++++++++++++++++++++++++++++++------
+ 1 file changed, 35 insertions(+), 6 deletions(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index 1340a10..80bc05c 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -461,8 +461,13 @@ int EinkCompositorWorker::Rgba888ToGray16ByRga(int *output_buffer, const buffer_
+     src_buf_format = hwc_get_handle_format(fb_handle);
+ #endif
+ 
+-    hwc_lock(fb_handle, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
++    src_vir = NULL;
++    ret = hwc_lock(fb_handle, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
+                   0, 0, src_buf_w, src_buf_h, (void **)&src_vir);
++    if(ret || src_vir == NULL){
++      ALOGE("Failed to lock rga buffer, rga_output_addr =%p, ret=%d", src_vir, ret);
++      return ret;
++    }
+ 
+     src_l = 0;
+     src_t = 0;
+@@ -837,8 +842,13 @@ int EinkCompositorWorker::ConvertToColorEink2(const buffer_handle_t &fb_handle){
+     return ret;
+   }
+ 
+-  hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
++  framebuffer_base = NULL;
++  ret = hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
+                 0, 0, width, height, (void **)&framebuffer_base);
++  if(ret || framebuffer_base == NULL){
++    ALOGE("Failed to lock rga buffer, rga_output_addr =%p, ret=%d", framebuffer_base, ret);
++    return ret;
++  }
+ 
+   if(output_format == HAL_PIXEL_FORMAT_RGBA_8888)
+     Rgb888_to_color_eink2((char*)gray16_buffer,(int*)(framebuffer_base),height,width,ebc_buf_info.width);
+@@ -895,8 +905,13 @@ int EinkCompositorWorker::ConvertToColorEink1(const buffer_handle_t &fb_handle){
+     return ret;
+   }
+ 
+-  hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
++  framebuffer_base = NULL;
++  ret = hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
+                 0, 0, width, height, (void **)&framebuffer_base);
++  if(ret || framebuffer_base == NULL){
++    ALOGE("Failed to lock rga buffer, rga_output_addr =%p, ret=%d", framebuffer_base, ret);
++    return ret;
++  }
+ 
+   if(output_format == HAL_PIXEL_FORMAT_RGBA_8888) {
+     image_to_cfa_grayscale_gen2_ARGBB8888(width, height, (unsigned char *)framebuffer_base, (unsigned char *)gray256_new_buffer);
+@@ -944,8 +959,13 @@ int EinkCompositorWorker::ConvertToY4Regal(const buffer_handle_t &fb_handle) {
+     return ret;
+   }
+ 
+-  hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
++  rga_output_addr = NULL;
++  ret = hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
+                 0, 0, width, height, (void **)&rga_output_addr);
++  if(ret || rga_output_addr == NULL){
++    ALOGE("Failed to lock rga buffer, rga_output_addr =%p, ret=%d", rga_output_addr, ret);
++    return ret;
++  }
+ 
+   eink_process((uint8_t *)rga_output_addr, (uint8_t *)gray256_new_buffer, ebc_buf_info.width, ebc_buf_info.height);
+   memcpy(gray256_new_buffer, rga_output_addr, ebc_buf_info.width * ebc_buf_info.height);
+@@ -1002,9 +1022,13 @@ int EinkCompositorWorker::ConvertToY4Dither(const buffer_handle_t &fb_handle, in
+       ALOGE("Failed to prepare rga buffer for RGA rotate %d", ret);
+       return ret;
+     }
+-
+-    hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
++    rga_output_addr = NULL;
++    ret = hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
+                   0, 0, width, height, (void **)&rga_output_addr);
++    if(ret || rga_output_addr == NULL){
++      ALOGE("Failed to lock rga buffer, rga_output_addr =%p, ret=%d", rga_output_addr, ret);
++      return ret;
++    }
+ 
+     gray256_addr = rga_output_addr;
+     gray256_to_gray16_dither(gray256_addr,gray16_buffer,ebc_buf_info.height, ebc_buf_info.width, ebc_buf_info.width);
+@@ -1052,8 +1076,13 @@ int EinkCompositorWorker::ConvertToY1Dither(const buffer_handle_t &fb_handle) {
+     return ret;
+   }
+ 
++  rga_output_addr=NULL;
+   hwc_lock(src_hnd, GRALLOC_USAGE_SW_READ_MASK | GRALLOC_USAGE_SW_WRITE_MASK, //gr_handle->usage,
+                 0, 0, width, height, (void **)&rga_output_addr);
++  if(ret || rga_output_addr == NULL){
++    ALOGE("Failed to lock rga buffer, rga_output_addr =%p, ret=%d", rga_output_addr, ret);
++    return ret;
++  }
+ 
+   gray256_addr = rga_output_addr;
+   if(rga_output_addr == NULL)
+-- 
+2.17.1
+

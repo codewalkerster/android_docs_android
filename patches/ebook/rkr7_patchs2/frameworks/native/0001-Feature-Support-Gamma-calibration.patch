@@ -1,0 +1,129 @@
+From f6124de621e8819fbffe546919bbc2022abf73b3 Mon Sep 17 00:00:00 2001
+From: libin <bin.li@rock-chips.com>
+Date: Mon, 11 Oct 2021 20:05:01 +0800
+Subject: [PATCH] Feature : Support Gamma calibration.
+
+Signed-off-by: libin <bin.li@rock-chips.com>
+Change-Id: I1a35b2df54fb4d93d2a2c97383848d9a8fcb9339
+---
+ libs/renderengine/gl/Program.cpp              | 22 +++++++++++++++++++
+ libs/renderengine/gl/Program.h                |  3 +++
+ libs/renderengine/gl/ProgramCache.cpp         | 20 +++++++++++++++++
+ .../renderengine/private/Description.h        |  0
+ 4 files changed, 45 insertions(+)
+ mode change 100644 => 100755 libs/renderengine/gl/Program.cpp
+ mode change 100644 => 100755 libs/renderengine/gl/Program.h
+ mode change 100644 => 100755 libs/renderengine/gl/ProgramCache.cpp
+ mode change 100644 => 100755 libs/renderengine/include/renderengine/private/Description.h
+
+diff --git a/libs/renderengine/gl/Program.cpp b/libs/renderengine/gl/Program.cpp
+old mode 100644
+new mode 100755
+index f4fbf3524..2b215ab37
+--- a/libs/renderengine/gl/Program.cpp
++++ b/libs/renderengine/gl/Program.cpp
+@@ -23,6 +23,9 @@
+ #include <utils/String8.h>
+ #include "ProgramCache.h"
+ 
++#include <cutils/properties.h>
++
++
+ namespace android {
+ namespace renderengine {
+ namespace gl {
+@@ -66,6 +69,7 @@ Program::Program(const ProgramCache::Key& /*needs*/, const char* vertex, const c
+         mTextureMatrixLoc = glGetUniformLocation(programId, "texture");
+         mSamplerLoc = glGetUniformLocation(programId, "sampler");
+         mColorLoc = glGetUniformLocation(programId, "color");
++        mGammaLoc = glGetUniformLocation(programId, "levels");
+         mDisplayMaxLuminanceLoc = glGetUniformLocation(programId, "displayMaxLuminance");
+         mMaxMasteringLuminanceLoc = glGetUniformLocation(programId, "maxMasteringLuminance");
+         mMaxContentLuminanceLoc = glGetUniformLocation(programId, "maxContentLuminance");
+@@ -129,6 +133,24 @@ void Program::setUniforms(const Description& desc) {
+         const float color[4] = {desc.color.r, desc.color.g, desc.color.b, desc.color.a};
+         glUniform4fv(mColorLoc, 1, color);
+     }
++    if (mGammaLoc >= 0) {
++        char valuex[125];
++        property_get("debug.sf.gamma.minInput", valuex, "0");
++        float gamma_x = atof(valuex);
++
++        char valuey[125];
++        property_get("debug.sf.gamma.gamma", valuey, "1.0");
++        float gamma_y = atof(valuey);
++
++        char valuez[125];
++        property_get("debug.sf.gamma.maxInput", valuez, "255");
++        float gamma_z = atof(valuez);
++
++
++        const float gamma[3] = {gamma_x, gamma_y, gamma_z};
++        glUniform3fv(mGammaLoc, 1, gamma);
++    }
++
+     if (mInputTransformMatrixLoc >= 0) {
+         mat4 inputTransformMatrix = desc.inputTransformMatrix;
+         glUniformMatrix4fv(mInputTransformMatrixLoc, 1, GL_FALSE, inputTransformMatrix.asArray());
+diff --git a/libs/renderengine/gl/Program.h b/libs/renderengine/gl/Program.h
+old mode 100644
+new mode 100755
+index fc3755e78..ffd9765fb
+--- a/libs/renderengine/gl/Program.h
++++ b/libs/renderengine/gl/Program.h
+@@ -94,6 +94,9 @@ private:
+     /* location of the color uniform */
+     GLint mColorLoc;
+ 
++    /* location of the gamma uniform */
++    GLint mGammaLoc;
++
+     /* location of display luminance uniform */
+     GLint mDisplayMaxLuminanceLoc;
+     /* location of max mastering luminance uniform */
+diff --git a/libs/renderengine/gl/ProgramCache.cpp b/libs/renderengine/gl/ProgramCache.cpp
+old mode 100644
+new mode 100755
+index 3ae35ec4e..38ffb6436
+--- a/libs/renderengine/gl/ProgramCache.cpp
++++ b/libs/renderengine/gl/ProgramCache.cpp
+@@ -596,6 +596,23 @@ String8 ProgramCache::generateFragmentShader(const Key& needs) {
+     } else if (needs.getTextureTarget() == Key::TEXTURE_2D) {
+         fs << "uniform sampler2D sampler;";
+     }
++    fs << "uniform vec3 levels;";
++
++    /// Gamma 校正
++    fs << "vec3 gammaCorrect(vec3 color, float gamma){\n"
++        "return pow(color, vec3(1.0/gamma));\n"
++    "}\n"
++
++    /// 对 color 进行重新映射到 min, max 之间
++    "vec3 levelRange(vec3 color, float minInput, float maxInput){\n"
++        "return min(\n"
++           "max(color - vec3(minInput), vec3(0.0)) / (vec3(maxInput) - vec3(minInput)), vec3(1.0));\n"
++    "}\n"
++
++    "vec3 finalLevels(vec3 color, float minInput, float gamma, float maxInput){\n"
++        "return gammaCorrect(levelRange(color, minInput, maxInput), gamma);\n"
++    "}\n";
++
+ 
+     if (needs.hasTextureCoords()) {
+         fs << "varying vec2 outTexCoords;";
+@@ -753,6 +770,9 @@ String8 ProgramCache::generateFragmentShader(const Key& needs) {
+             fs << "gl_FragColor.a *= applyCornerRadius(outCropCoords);";
+         }
+     }
++    fs << "vec3 adjustedLevels = finalLevels(gl_FragColor.rgb, levels.x/255.0, levels.y, levels.z/255.0);";
++
++    fs << "gl_FragColor = vec4(adjustedLevels,gl_FragColor.a);";
+ 
+     fs << dedent << "}";
+     return fs.getString();
+diff --git a/libs/renderengine/include/renderengine/private/Description.h b/libs/renderengine/include/renderengine/private/Description.h
+old mode 100644
+new mode 100755
+-- 
+2.17.1
+

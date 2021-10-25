@@ -1,0 +1,40 @@
+From 2c5bf5bce5d1c1f90e2dae1f85b99c9e3b1fa47c Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Tue, 23 Nov 2021 17:33:18 +0800
+Subject: [PATCH] paintworker: update to match kernel defined
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Id80b9faee55cd482959d06f41a428f5296986de5
+---
+ paintworker/commitworker.cpp | 2 +-
+ paintworker/commitworker.h   | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/paintworker/commitworker.cpp b/paintworker/commitworker.cpp
+index eb53d5f..39e1e09 100755
+--- a/paintworker/commitworker.cpp
++++ b/paintworker/commitworker.cpp
+@@ -261,7 +261,7 @@ int CommitWorker::Init()
+         ALOGE("GET_EBC_BUFFER failed\n");
+     }
+ 
+-    ebc_buffer_base = mmap(0, EINK_FB_SIZE * 4, PROT_READ|PROT_WRITE, MAP_SHARED, ebc_fd, 0);
++    ebc_buffer_base = mmap(0, EINK_FB_SIZE * 5, PROT_READ|PROT_WRITE, MAP_SHARED, ebc_fd, 0);
+     if (ebc_buffer_base == MAP_FAILED) {
+         ALOGE("Error mapping the ebc buffer (%s)\n", strerror(errno));
+     }
+diff --git a/paintworker/commitworker.h b/paintworker/commitworker.h
+index fe4b27c..224dbd4 100755
+--- a/paintworker/commitworker.h
++++ b/paintworker/commitworker.h
+@@ -96,6 +96,7 @@ struct ebc_buf_info_t {
+     int win_y2;
+     int width_mm;
+     int height_mm;
++    int needpic;
+ };
+ 
+ struct win_coordinate {
+-- 
+2.17.1
+
