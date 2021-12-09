@@ -1,0 +1,206 @@
+From b036e2fe3b834bdaf8ca95b9eabb5c2d45465e16 Mon Sep 17 00:00:00 2001
+From: wh <wanghang@rock-chips.com>
+Date: Tue, 30 Nov 2021 16:01:33 +0800
+Subject: [PATCH 2/2] Eink: fix some err in app custom function
+
+1. close cursor after query systemui uri
+2. fix always reboot while system server reboot with crash
+3. optimizes some methods
+
+Signed-off-by: wh <wanghang@rock-chips.com>
+Change-Id: I431df95749ab749c71c299d8b4b5d72a9e5d0468
+---
+ core/java/android/app/Activity.java           |  3 +-
+ .../android/content/res/ResourcesImpl.java    |  3 +-
+ .../statusbar/phone/EinkSettingsManager.java  | 12 +++--
+ .../statusbar/phone/EinkSettingsProvider.java |  6 +--
+ .../server/wm/RootWindowContainer.java        | 48 ++++++++++++++-----
+ 5 files changed, 50 insertions(+), 22 deletions(-)
+ mode change 100755 => 100644 packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
+
+diff --git a/core/java/android/app/Activity.java b/core/java/android/app/Activity.java
+index 7dd383c9beec..02fb41311727 100644
+--- a/core/java/android/app/Activity.java
++++ b/core/java/android/app/Activity.java
+@@ -8080,7 +8080,8 @@ public class Activity extends ContextThemeWrapper
+         mIsInPictureInPictureMode = windowingMode == WINDOWING_MODE_PINNED;
+         restoreHasCurrentPermissionRequest(icicle);
+         String boot_completed = SystemProperties.get("sys.boot_completed");
+-        if (boot_completed.equals("1")) {
++        if (boot_completed.equals("1")
++                && "1".equals(SystemProperties.get("service.bootanim.exit"))) {
+             int dpi = -1;
+             Configuration config = getResources().getConfiguration();
+             DisplayMetrics metrics = getResources().getDisplayMetrics();
+diff --git a/core/java/android/content/res/ResourcesImpl.java b/core/java/android/content/res/ResourcesImpl.java
+index e1eadf0e9ecd..30eeb586d8c0 100644
+--- a/core/java/android/content/res/ResourcesImpl.java
++++ b/core/java/android/content/res/ResourcesImpl.java
+@@ -489,7 +489,8 @@ public class ResourcesImpl {
+                             + mDisplayAdjustments.getCompatibilityInfo());
+                 }
+                 String boot_completed = SystemProperties.get("sys.boot_completed");
+-                if (boot_completed.equals("1") && config != null && config.densityDpi == 0) {
++                if (boot_completed.equals("1") && "1".equals(SystemProperties.get("service.bootanim.exit"))
++                        && config != null && config.densityDpi == 0) {
+                     int dpi = -1;
+                     try {
+                         if (AppGlobals.getPackageManager() != null) {
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsManager.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsManager.java
+index 5656ec38d070..75e7eb237e04 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsManager.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsManager.java
+@@ -4,6 +4,7 @@ import android.content.Context;
+ import android.content.Intent;
+ import android.os.AsyncTask;
+ import android.os.RemoteException;
++import android.os.SystemProperties;
+ import android.os.UserHandle;
+ import android.provider.Settings;
+ import android.util.Log;
+@@ -36,7 +37,7 @@ public class EinkSettingsManager {
+     }
+ 
+     public static String getProperty(String key) {
+-        String value = "";
++        /*String value = "";
+         try {
+             Class c = Class.forName("android.os.SystemProperties");
+             Method get = c.getMethod("get", String.class);
+@@ -45,17 +46,20 @@ public class EinkSettingsManager {
+             e.printStackTrace();
+         } finally {
+             return value;
+-        }
++        }*/
++        String ss = SystemProperties.get(key);
++        return null == ss?"":ss;
+     }
+ 
+     public void setProperty(String key, String einkRefrshFrequency) {
+-        try {
++        /*try {
+             Class c = Class.forName("android.os.SystemProperties");
+             Method set = c.getMethod("set", String.class, String.class);
+             set.invoke(c, key, einkRefrshFrequency);
+         } catch (Exception e) {
+             e.printStackTrace();
+-        }
++        }*/
++        SystemProperties.set(key, einkRefrshFrequency);
+     }
+ 
+     public void setEinkMode(String einkMode) {
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
+old mode 100755
+new mode 100644
+index 63ed44b4f1da..efbd74277004
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/EinkSettingsProvider.java
+@@ -57,6 +57,7 @@ public class EinkSettingsProvider extends ContentProvider {
+     private SQLiteDatabase mDB;
+     private EinkSettingsManager mEinkSettingsManager;
+     private PackageManager mPackageManager;
++    private static final Set<String> mBlackListSet = new HashSet<>(Arrays.asList(NavigationBarFragment.BLACK_EINK_CONFIG_APP));
+     static {
+         mUriMatcher = new UriMatcher((UriMatcher.NO_MATCH));
+         mUriMatcher.addURI(AUTHORITY, "einksettings", EINKSETTINGS);
+@@ -101,8 +102,7 @@ public class EinkSettingsProvider extends ContentProvider {
+             case EINKSETTINGS_UPDATE:
+                 packageName = selectionArgs[0];
+                 Log.d(TAG, "packageName: " + packageName);
+-                Set<String> set = new HashSet<>(Arrays.asList(NavigationBarFragment.BLACK_EINK_CONFIG_APP));
+-                if (!set.contains(packageName)) {
++                if (!mBlackListSet.contains(packageName)) {
+                     cursor = mDB.query(EINKSETTINGS_TABLE, projection, selection,
+                             selectionArgs, null, null, sortOrder);
+                     if(cursor.getCount() > 0) {
+@@ -188,7 +188,7 @@ public class EinkSettingsProvider extends ContentProvider {
+                     EinkSettingsManager.updateAppBleach(getContext());
+                     break;
+                 } else {
+-                    Log.d(TAG, "It's in the blacklist.");
++                    Log.d(TAG, "It's in the blacklist with " + packageName);
+                 }
+         }
+         return cursor;
+diff --git a/services/core/java/com/android/server/wm/RootWindowContainer.java b/services/core/java/com/android/server/wm/RootWindowContainer.java
+index 1d41574f7e80..586025c46515 100644
+--- a/services/core/java/com/android/server/wm/RootWindowContainer.java
++++ b/services/core/java/com/android/server/wm/RootWindowContainer.java
+@@ -209,6 +209,9 @@ class RootWindowContainer extends WindowContainer<DisplayContent>
+     boolean mOrientationChangeComplete = true;
+     boolean mWallpaperActionPending = false;
+ 
++    private String mLastSettingsQueryPackage = "";
++    private long mLastSettingsEinkQueryTime = 0;
++
+     private final Handler mHandler;
+ 
+     private String mCloseSystemDialogsReason;
+@@ -3325,12 +3328,24 @@ class RootWindowContainer extends WindowContainer<DisplayContent>
+                 return false;
+             }
+         }
+-        final ActivityStack mainStack = getTopDisplayFocusedStack();
+-        ActivityRecord r = mainStack.topRunningActivityLocked();
+-        Uri URI_EINK_SETTINGS_UPDATE = Uri.parse("content://com.android.systemui.eink/einksettingsupdate");
+-        Uri URI_EINK_SETTINGS = Uri.parse("content://com.android.systemui.eink/einksettings");
+         String boot_completed = SystemProperties.get("sys.boot_completed");
+-        if(boot_completed.equals("1")) {
++        if(boot_completed.equals("1")
++                && "1".equals(SystemProperties.get("service.bootanim.exit"))) {
++            final ActivityStack mainStack = getTopDisplayFocusedStack();
++            ActivityRecord r = mainStack.topRunningActivityLocked();
++            /*long nowTime = System.currentTimeMillis();
++            String rPackageName = r.packageName;
++            if (null != rPackageName
++                    && rPackageName.equals(mLastSettingsQueryPackage)
++                    && nowTime - mLastSettingsEinkQueryTime < 1000) {
++                sendPowerHintForLaunchEndIfNeeded();
++                return true;
++            }
++            mLastSettingsQueryPackage = rPackageName;
++            mLastSettingsEinkQueryTime = nowTime;*/
++            Uri URI_EINK_SETTINGS_UPDATE = Uri.parse("content://com.android.systemui.eink/einksettingsupdate");
++            Uri URI_EINK_SETTINGS = Uri.parse("content://com.android.systemui.eink/einksettings");
++
+             new Thread(){
+                 @Override
+                 public void run() {
+@@ -3338,17 +3353,24 @@ class RootWindowContainer extends WindowContainer<DisplayContent>
+                     try {
+                         cursor = mService.mContext.getContentResolver().query(URI_EINK_SETTINGS_UPDATE,
+                             null, "package_name = ?", new String[]{r.packageName}, null);
++                        if(null != cursor) {
++                            if(cursor.getCount() > 0) {
++                                //Log.v(TAG, "EINK++ cursor.getCount() > 0");
++                            } else {
++                                ContentValues values = new ContentValues();
++                                values.put("package_name", r.packageName);
++                                mService.mContext.getContentResolver().insert(URI_EINK_SETTINGS, values);
++                            }
++                        }
+                     } catch (Exception e) {
+                         Log.v(TAG, "EINK++ Exception: " + e.getMessage());
+                         cursor = null;
+-                    }
+-                    if(null != cursor) {
+-                        if(cursor.getCount() > 0) {
+-                            //Log.v(TAG, "EINK++ cursor.getCount() > 0");
+-                        } else {
+-                            ContentValues values = new ContentValues();
+-                            values.put("package_name", r.packageName);
+-                            mService.mContext.getContentResolver().insert(URI_EINK_SETTINGS, values);
++                    } finally {
++                        try {
++                            if (null != cursor) {
++                                cursor.close();
++                            }
++                        } catch (Exception e1) {
+                         }
+                     }
+                 }
+-- 
+2.17.1
+

@@ -1,0 +1,227 @@
+From a3f3d64d23d4eaa0095f450f8615ac3af9cfbb1a Mon Sep 17 00:00:00 2001
+From: "president.chao" <president.chao@rock-chips.com>
+Date: Thu, 4 Nov 2021 03:54:03 +0000
+Subject: [PATCH 1/2] Add the mAppDpiMapLock to avoid causing the
+ BadParcelableException,such as Map size does not match number of entries!
+
+Signed-off-by: president.chao <president.chao@rock-chips.com>
+Change-Id: I1b24f24ac677ba0ffb6832281dcf2d70c24544e9
+---
+ .../server/pm/PackageManagerService.java      | 164 +++++++++---------
+ 1 file changed, 85 insertions(+), 79 deletions(-)
+
+diff --git a/services/core/java/com/android/server/pm/PackageManagerService.java b/services/core/java/com/android/server/pm/PackageManagerService.java
+index 8c93b7cc41de..e57728b2d6a2 100644
+--- a/services/core/java/com/android/server/pm/PackageManagerService.java
++++ b/services/core/java/com/android/server/pm/PackageManagerService.java
+@@ -775,6 +775,8 @@ public class PackageManagerService extends IPackageManager.Stub
+     // the suffix "Locked". Some methods may use the legacy suffix "LP"
+     final Object mLock;
+ 
++    final Object mAppDpiMapLock = new Object();
++
+     // Keys are String (package name), values are Package.
+     @GuardedBy("mLock")
+     final ArrayMap<String, AndroidPackage> mPackages = new ArrayMap<>();
+@@ -25896,8 +25898,11 @@ public class PackageManagerService extends IPackageManager.Stub
+      */
+     public void setAppDpiToMap(String packageName, int dpi) {
+         if (DEBUG_DPI) Slog.d(TAG, "---zc--setAppDpiToMap packageName:" + packageName + ",dpi:" + dpi);
+-        if(packageName != null && !packageName.equals(""))
+-            mAppDpiMap.put(packageName, dpi);
++        if(packageName != null && !packageName.equals("")) {
++            synchronized(mAppDpiMapLock) {
++                mAppDpiMap.put(packageName, dpi);
++            }
++       }
+     }
+ 
+     /**
+@@ -25905,80 +25910,79 @@ public class PackageManagerService extends IPackageManager.Stub
+      */
+     public Map getAppDpiMap() {
+         if (DEBUG_DPI) Slog.d(TAG, "---zc--getAppDpiMap");
+-        if (null == mAppDpiMap) {
+-            if (DEBUG_DPI) Slog.d(TAG, "---zc--null == mAppDpiMap");
+-            mAppDpiMap = new HashMap<String, Integer>();
+-            File configFilter = new File(DATA_APP_DPI_CONFIG);
+-            if (configFilter.exists()) {
+-                if (DEBUG_DPI) Slog.d(TAG, "configFilter.exists()");
+-                FileInputStream stream = null;
+-                try {
+-                    stream = new FileInputStream(configFilter);
+-                    XmlPullParser xmlPullParser = Xml.newPullParser();
+-                    xmlPullParser.setInput(stream, null);
+-                    int type;
+-                    do {
+-                        type = xmlPullParser.next();
+-                        if (type == XmlPullParser.START_TAG) {
+-                            String tag = xmlPullParser.getName();
+-                            if ("app".equals(tag)) {
+-                                String pkgName = xmlPullParser.getAttributeValue(null, "packageName");
+-                                String dpi = xmlPullParser.getAttributeValue(null, "dpi");
+-                                if (DEBUG_DPI) Slog.d(TAG, "---zc---getConfigMap: pkgName = " + pkgName + ", dpi = " + dpi);
+-                                if (!TextUtils.isEmpty(pkgName) && !TextUtils.isEmpty(dpi)) {
+-                                    int parseAppDpi = Integer.parseInt(dpi);
+-                                    mAppDpiMap.put(pkgName, parseAppDpi >= 0 ? parseAppDpi : -1);
++        synchronized(mAppDpiMapLock) {
++            if (null == mAppDpiMap) {
++                if (DEBUG_DPI) Slog.d(TAG, "---zc--null == mAppDpiMap");
++                mAppDpiMap = new HashMap<String, Integer>();
++                File configFilter = new File(DATA_APP_DPI_CONFIG);
++                if (configFilter.exists()) {
++                    if (DEBUG_DPI) Slog.d(TAG, "configFilter.exists()");
++                    FileInputStream stream = null;
++                    try {
++                        stream = new FileInputStream(configFilter);
++                        XmlPullParser xmlPullParser = Xml.newPullParser();
++                        xmlPullParser.setInput(stream, null);
++                        int type;
++                        do {
++                            type = xmlPullParser.next();
++                            if (type == XmlPullParser.START_TAG) {
++                                String tag = xmlPullParser.getName();
++                                if ("app".equals(tag)) {
++                                    String pkgName = xmlPullParser.getAttributeValue(null, "packageName");
++                                    String dpi = xmlPullParser.getAttributeValue(null, "dpi");
++                                    if (DEBUG_DPI) Slog.d(TAG, "---zc---getConfigMap: pkgName = " + pkgName + ", dpi = " + dpi);
++                                    if (!TextUtils.isEmpty(pkgName) && !TextUtils.isEmpty(dpi)) {
++                                        int parseAppDpi = Integer.parseInt(dpi);
++                                        mAppDpiMap.put(pkgName, parseAppDpi >= 0 ? parseAppDpi : -1);
++                                    }
++                                } else {
++                                    if (DEBUG_DPI) Slog.d(TAG, "---zc---getConfigMap: tag != app");
+                                 }
+-                            } else {
+-                                if (DEBUG_DPI) Slog.d(TAG, "---zc---getConfigMap: tag != app");
+                             }
+-                        }
+-                    } while (type != XmlPullParser.END_DOCUMENT);
+-                } catch (NullPointerException e) {
+-                    Slog.w(TAG, "failed parsing " + configFilter, e);
+-                } catch (NumberFormatException e) {
+-                    Slog.w(TAG, "failed parsing " + configFilter, e);
+-                } catch (XmlPullParserException e) {
+-                    Slog.w(TAG, "failed parsing " + configFilter, e);
+-                } catch (IndexOutOfBoundsException e) {
+-                    Slog.w(TAG, "failed parsing " + configFilter, e);
+-                } catch (IOException e) {
+-                    Slog.w(TAG, "failed parsing " + configFilter, e);
+-                } finally {
+-                    try {
+-                        if (stream != null) {
+-                            stream.close();
+-                        }
++                        } while (type != XmlPullParser.END_DOCUMENT);
++                    } catch (NullPointerException e) {
++                        Slog.w(TAG, "failed parsing " + configFilter, e);
++                    } catch (NumberFormatException e) {
++                        Slog.w(TAG, "failed parsing " + configFilter, e);
++                    } catch (XmlPullParserException e) {
++                        Slog.w(TAG, "failed parsing " + configFilter, e);
++                    } catch (IndexOutOfBoundsException e) {
++                        Slog.w(TAG, "failed parsing " + configFilter, e);
+                     } catch (IOException e) {
+-                        Slog.w(TAG, "stream.close failed");
++                        Slog.w(TAG, "failed parsing " + configFilter, e);
++                    } finally {
++                        try {
++                            if (stream != null) {
++                                stream.close();
++                            }
++                        } catch (IOException e) {
++                            Slog.w(TAG, "stream.close failed");
++                        }
+                     }
+-                }
+-            } else {
+-                if (DEBUG_DPI) Slog.w(TAG, "---zc---package_app_dpi_config.xml is not exists");
+-                RandomAccessFile randomAccessFile = null;
+-                try {
+-                    randomAccessFile = new RandomAccessFile(configFilter, "rw");
+-                    randomAccessFile.writeBytes("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n" +
+-                        "<package-app-dpi-config>\n" + "</package-app-dpi-config>\n");
+-                } catch (Exception e) {
+-                    e.printStackTrace();
+-                } finally {
++                } else {
++                    if (DEBUG_DPI) Slog.w(TAG, "---zc---package_app_dpi_config.xml is not exists");
++                    RandomAccessFile randomAccessFile = null;
+                     try {
+-                        if (randomAccessFile != null) {
+-                            randomAccessFile.close();
+-                        }
+-                    } catch (IOException e) {
++                        randomAccessFile = new RandomAccessFile(configFilter, "rw");
++                        randomAccessFile.writeBytes("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n" +
++                            "<package-app-dpi-config>\n" + "</package-app-dpi-config>\n");
++                    } catch (Exception e) {
+                         e.printStackTrace();
++                    } finally {
++                        try {
++                            if (randomAccessFile != null) {
++                                randomAccessFile.close();
++                            }
++                        } catch (IOException e) {
++                            e.printStackTrace();
++                        }
+                     }
+                 }
++            } else {
++                if (DEBUG_DPI) Slog.w(TAG, "---zc---mAppDpiMap != null");
+             }
+-        } else {
+-            if (DEBUG_DPI) Slog.w(TAG, "---zc---mAppDpiMap != null");
+-        }
+-        if (mAppDpiMap != null && mAppDpiMap.size() > 0) {
+-            return mAppDpiMap;
+         }
+-        return new HashMap<String, Integer>();
++        return mAppDpiMap;
+     }
+ 
+     /**
+@@ -25986,25 +25990,27 @@ public class PackageManagerService extends IPackageManager.Stub
+      */
+     public int getAppDpi(String packageName) {
+         if (DEBUG_DPI) Slog.v(TAG, "---zc---getAppDpi packageName:" + packageName);
+-        if (mAppDpiMap != null && mAppDpiMap.size() > 0) {
+-            if (!TextUtils.isEmpty(packageName)) {
+-                for (String pkgName : mAppDpiMap.keySet()) {
+-                    if (!TextUtils.isEmpty(pkgName) && packageName.equals(pkgName)) {
+-                        Integer dpi = mAppDpiMap.get(packageName);
+-                        if (dpi != null) {
+-                            if (DEBUG_DPI) Slog.d(TAG, "---zc---dpi for app package = " + packageName + " , dpi = " + dpi.toString());
+-                            return dpi;
++        synchronized(mAppDpiMapLock) {
++            if (mAppDpiMap != null && mAppDpiMap.size() > 0) {
++                if (!TextUtils.isEmpty(packageName)) {
++                    for (String pkgName : mAppDpiMap.keySet()) {
++                        if (!TextUtils.isEmpty(pkgName) && packageName.equals(pkgName)) {
++                            Integer dpi = mAppDpiMap.get(packageName);
++                            if (dpi != null) {
++                                if (DEBUG_DPI) Slog.d(TAG, "---zc---dpi for app package = " + packageName + " , dpi = " + dpi.toString());
++                                return dpi;
++                            } else {
++                                continue;
++                            }
+                         } else {
+                             continue;
+                         }
+-                    } else {
+-                        continue;
+                     }
+                 }
++            } else {
++                if (DEBUG_DPI) Slog.v(TAG, "---zc---mAppDpiMap ==null || mAppDpiMap.size() <= 0");
++                return -1;
+             }
+-        } else {
+-            if (DEBUG_DPI) Slog.v(TAG, "---zc---mAppDpiMap ==null || mAppDpiMap.size() <= 0");
+-            return -1;
+         }
+         return -1;
+     }
+-- 
+2.17.1
+

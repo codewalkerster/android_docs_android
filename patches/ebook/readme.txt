@@ -15,6 +15,8 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 ├── frameworks
 │   ├── base
 │   │   └── 0001-EINK-use-new-way-to-control-Contrast.patch                        新对比度调节方法相关补丁
+│   │   ├── 0002-Add-the-mAppDpiMapLock-to-avoid-causing-the-BadParce.patch        第三方应用调节功能，增加锁保护
+│   │   └── 0003-Eink-fix-some-err-in-app-custom-function.patch                    修复一些应用异常导致android反复重启的问题
 │   └── native
 │       └── 0001-Feature-Support-Gamma-calibration.patch                           新对比度调节方法相关补丁
 ├── hardware
@@ -30,6 +32,7 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 │               ├── 0007-support-regal-mode-for-eink-panel.patch                      支持元太regal去残影功能，需要元太libeink.so和5bit波形文件支持，只有GLR和GLD模式支持regal刷新
 │               ├── 0008-regal-use-y4-commit-to-do-out-regal-mode.patch               regal相关补丁
 │               └── 0009-fix-resume-failed-by-regal-mode.patch                        regal相关补丁
+│               └── 0010-out-regal-mode-no-need-to-do-force-full.patch                regal相关补丁
 ├── kernel
 │   ├── 0001-mfd-rk808-disable-rk817-int-when-shutdown.patch                          更新rkr7_patches中的补丁0007-drivers-mfd-rk808-disable-rk817-int-when-shutdown.patch
 │   ├── 0002-drm-rockchip-ebc_dev-release-version-v2.13.patch                         ebc驱动更新，解决EPD_AUTO刷新不全问题
@@ -38,16 +41,25 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 │   ├── 0005-drm-rockchip-ebc_dev-release-version-v2.15.patch                         regal相关补丁，ebc驱动更新，支持regal 5bit波形文件
 │   ├── 0006-drm-rockchip-ebc_dev-release-version-v2.16.patch                         regal相关补丁，ebc驱动更新，解决regal的个别问题
 │   └── 0007-drm-rockchip-ebc_dev-release-version-v2.17.patch                         regal相关补丁，ebc驱动更新，解决regal的个别问题
+│   ├── 0008-drm-rockchip-ebc_dev-release-version-v2.18.patch                         regal相关补丁，ebc驱动更新，AUTO模式支持Y8数据
+│   ├── 0009-arm64-dts-rockchip-rk3566-rk817-eink-w103-assign-ebc.patch               ebc dclk补丁，可以更精确的分配到sdclk
+│   ├── 0010-drm-rockchip-ebc_tcon-set-ebc-dclk-div-0.patch                           ebc dclk补丁，可以更精确的分配到sdclk
+│   ├── 0011-drm-rockchip-ebc_dev-release-version-v2.19.patch                         ebc驱动更新,auto模式刷新不全问题
+│   ├── 0012-drm-rockchip-ebc_dev-release-version-v2.20.patch                         ebc驱动更新，ebc有buf请求时提前poweron
+│   ├── 0013-drm-rockchip-ebc_dev-release-version-v2.21.patch                         ebc驱动更新，ebc延迟200ms下电，减少一些场景下的频繁上下电问题
+│   └── 0014-arm64-dts-rockchip-config-the-pmic_sleep-internal-pu.patch               pmic sleep配置更新
 ├── packages
 │   └── apps
 │       └── NoteDemo
 │           └── 0001-paintworker-update-to-match-kernel-defined.patch                 更新结构体定义，与最新的kernel ebc驱动匹配
-└── rkbin
-    ├── 0001-rk3566-bl31-ultra-update-version-to-v2.10.patch                          bl31 bin更新，稳定性与功耗相关问题
-    ├── 0002-rk3566-ddr-update-ultra-ddr-bin-to-v1.09.patch                           ddr bin更新，稳定性与功耗相关问题
-    └── 0003-rk3566-bl31-ultra-update-version-to-v2.11.patch                          bl31 bin更新，解决v2.10 bl31 bin唤醒变慢的问题
+├── rkbin
+│   ├── 0001-rk3566-bl31-ultra-update-version-to-v2.10.patch                          bl31 bin更新，稳定性与功耗相关问题
+│   ├── 0002-rk3566-ddr-update-ultra-ddr-bin-to-v1.09.patch                           ddr bin更新，稳定性与功耗相关问题
+│   └── 0003-rk3566-bl31-ultra-update-version-to-v2.11.patch                          bl31 bin更新，解决v2.10 bl31 bin唤醒变慢的问题
+└── u-boot
+    └── 0001-rk_ebc_tcon-set-ebc-dclk.patch                                           ebc dclk补丁，可以更精确的分配到sdclk
 
-17 directories, 26 files
+18 directories, 37 files
 
 --------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,27 @@
+From 2f2690e24e05358055c70c3d64b96c3350c3ba6c Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Fri, 3 Dec 2021 10:48:50 +0800
+Subject: [PATCH 2/6] drm/rockchip: ebc_tcon: set ebc dclk div 0
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Icab6c9539fd055899c1bc95cf7ac496a17809117
+---
+ drivers/gpu/drm/rockchip/ebc-dev/tcon/ebc_tcon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/ebc-dev/tcon/ebc_tcon.c b/drivers/gpu/drm/rockchip/ebc-dev/tcon/ebc_tcon.c
+index 23c82751bb1be..f3c50d64ffbe5 100644
+--- a/drivers/gpu/drm/rockchip/ebc-dev/tcon/ebc_tcon.c
++++ b/drivers/gpu/drm/rockchip/ebc-dev/tcon/ebc_tcon.c
+@@ -209,7 +209,7 @@ static int tcon_enable(struct ebc_tcon *tcon, struct ebc_panel *panel)
+ 				| EPD_SDSHR(1));
+ 	tcon_write(tcon, EBC_DSP_START, DSP_SDCE_WIDTH(panel->ldl) | SW_BURST_CTRL);
+ 	tcon_write(tcon, EBC_DSP_CTRL,
+-				DSP_SWAP_MODE(panel->panel_16bit ? 2 : 3) | DSP_VCOM_MODE(1) | DSP_SDCLK_DIV(panel->panel_16bit ? 7 : 3));
++				DSP_SWAP_MODE(panel->panel_16bit ? 2 : 3) | DSP_VCOM_MODE(1) | DSP_SDCLK_DIV(0));
+ 	tcon_cfg_done(tcon);
+ 
+ 	enable_irq(tcon->irq);
+-- 
+2.17.1
+

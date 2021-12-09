@@ -1,0 +1,31 @@
+From f95f7627005f799d15fea139625e5aae52bdfaee Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Mon, 29 Nov 2021 17:55:49 +0800
+Subject: [PATCH] out regal mode no need to do force full
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I55e49d2b54107c8dfdfe27f65d9a486fce113f45
+---
+ einkcompositorworker.cpp | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index 52f2eb0..1b5fb69 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -1261,12 +1261,6 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+ 		&& composition->einkMode != EPD_PART_GLD16
+ 		&& composition->einkMode != EPD_PART_GLR16) {
+   		last_regal = !last_regal;
+-	      ConvertToY4Dither(composition->fb_handle, composition->einkMode);
+-		if (composition->einkMode == EPD_RESUME)
+-		      	Y4Commit(EPD_RESUME);
+-		else
+-		      	Y4Commit(EPD_FORCE_FULL);
+-		return 0;
+   	}
+   }
+ 
+-- 
+2.17.1
+

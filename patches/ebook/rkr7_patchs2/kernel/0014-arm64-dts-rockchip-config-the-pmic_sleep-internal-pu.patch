@@ -1,0 +1,54 @@
+From 1ea2bb4a99fb39d011859f8eabda07b342199e84 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 8 Dec 2021 11:38:32 +0800
+Subject: [PATCH 6/6] arm64: dts: rockchip: config the pmic_sleep internal pull
+ up/down for rk3566 eink boards
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I7c9c31babd2ec700d522836eeadbe2e4ce6cc819
+---
+ arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w103.dts | 4 ++--
+ arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w6.dts   | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w103.dts b/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w103.dts
+index 957f6e897fbf4..56831aba7741a 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w103.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w103.dts
+@@ -893,12 +893,12 @@
+ 
+ 		soc_slppin_gpio: soc_slppin_gpio {
+ 			rockchip,pins =
+-				<0 RK_PA2 RK_FUNC_GPIO &pcfg_output_low>;
++				<0 RK_PA2 RK_FUNC_GPIO &pcfg_output_low_pull_down>;
+ 		};
+ 
+ 		soc_slppin_slp: soc_slppin_slp {
+ 			rockchip,pins =
+-				<0 RK_PA2 1 &pcfg_pull_none>;
++				<0 RK_PA2 1 &pcfg_pull_up>;
+ 		};
+ 
+ 		soc_slppin_rst: soc_slppin_rst {
+diff --git a/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w6.dts b/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w6.dts
+index 015fdc4a740d1..08e7d51f929aa 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w6.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3566-rk817-eink-w6.dts
+@@ -759,12 +759,12 @@
+ 
+ 		soc_slppin_gpio: soc_slppin_gpio {
+ 			rockchip,pins =
+-				<0 RK_PA2 RK_FUNC_GPIO &pcfg_output_low>;
++				<0 RK_PA2 RK_FUNC_GPIO &pcfg_output_low_pull_down>;
+ 		};
+ 
+ 		soc_slppin_slp: soc_slppin_slp {
+ 			rockchip,pins =
+-				<0 RK_PA2 1 &pcfg_pull_none>;
++				<0 RK_PA2 1 &pcfg_pull_up>;
+ 		};
+ 
+ 		soc_slppin_rst: soc_slppin_rst {
+-- 
+2.17.1
+
