@@ -1,0 +1,63 @@
+From 0408e775ae3e39e6dcfb62c178e9741c73c9603e Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Sat, 11 Dec 2021 20:06:48 +0800
+Subject: [PATCH] update ebc_buf info
+
+user tid_name to singed buf user
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I7f423d87db3c897b403d34efb29b0b443576a2f3
+---
+ einkcompositorworker.cpp | 2 ++
+ einkcompositorworker.h   | 1 +
+ hwcomposer.cpp           | 2 ++
+ 3 files changed, 5 insertions(+)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index 1b5fb69..33522d3 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -147,6 +147,8 @@ int EinkCompositorWorker::Init(struct hwc_context_t *ctx) {
+       return -1;
+   }
+ 
++  snprintf(commit_buf_info.tid_name, 16, "hwc_compose");
++
+   if(ioctl(ebc_fd, EBC_GET_BUFFER,&commit_buf_info)!=0)
+   {
+      ALOGE("EBC_GET_BUFFER failed\n");
+diff --git a/einkcompositorworker.h b/einkcompositorworker.h
+index 2ce574a..f20b16e 100755
+--- a/einkcompositorworker.h
++++ b/einkcompositorworker.h
+@@ -118,6 +118,7 @@ struct ebc_buf_info_t {
+ 	int width_mm;
+ 	int height_mm;
+ 	int needpic; //16 or 32
++	char tid_name[16];
+ };
+ 
+ struct win_coordinate{
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index be9c1ab..6e8355c 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -160,6 +160,7 @@ struct ebc_buf_info {
+     int width_mm;
+     int height_mm;
+     int needpic; //16 or 32
++    char tid_name[16];
+ };
+ 
+ struct win_coordinate{
+@@ -2069,6 +2070,7 @@ int hwc_post_epd(int *buffer, Rect rect, int mode){
+ 
+   struct ebc_buf_info_t buf_info;
+ 
++  snprintf(buf_info.tid_name, 16, "hwc_logo");
+   if(ioctl(ebc_fd, EBC_GET_BUFFER,&buf_info)!=0)
+   {
+      ALOGE("EBC_GET_BUFFER failed\n");
+-- 
+2.17.1
+

@@ -1,0 +1,26 @@
+From 61fe28629f79215f7e89dd6915ded570ee93a494 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Sat, 11 Dec 2021 20:10:30 +0800
+Subject: [PATCH] update ebc buf_info with kernel defined
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I19512c501d80416a634717f0d1f807ef41636d57
+---
+ paintworker/commitworker.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/paintworker/commitworker.h b/paintworker/commitworker.h
+index 224dbd4..77ba6a0 100755
+--- a/paintworker/commitworker.h
++++ b/paintworker/commitworker.h
+@@ -97,6 +97,7 @@ struct ebc_buf_info_t {
+     int width_mm;
+     int height_mm;
+     int needpic;
++    char tid_name[16];
+ };
+ 
+ struct win_coordinate {
+-- 
+2.17.1
+

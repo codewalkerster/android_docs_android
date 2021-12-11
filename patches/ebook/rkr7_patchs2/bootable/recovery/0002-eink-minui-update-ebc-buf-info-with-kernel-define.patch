@@ -1,0 +1,37 @@
+From 3653ce32f00f76601bccf1967d1ee637fa40bc03 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Sat, 11 Dec 2021 20:04:46 +0800
+Subject: [PATCH] eink: minui; update ebc buf info with kernel define
+
+use tid_name to Signed buf user
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I32bf2408cfb9c43464e85655ed89877cc273e41e
+---
+ minui/graphics_fbdev.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/minui/graphics_fbdev.cpp b/minui/graphics_fbdev.cpp
+index 5f551b69..cf01c05b 100755
+--- a/minui/graphics_fbdev.cpp
++++ b/minui/graphics_fbdev.cpp
+@@ -77,6 +77,7 @@ struct ebc_buf_info_t{
+   int width_mm;
+   int height_mm;
+   int needpic;
++  char tid_name[16];
+ }__packed;
+ 
+ 
+@@ -267,6 +268,8 @@ GRSurface* MinuiBackendFbdev::Flip() {
+   if (is_eink_fb) {
+     struct ebc_buf_info_t buf_info;
+ 
++    snprintf(buf_info.tid_name, 16, "minui");
++
+     if (ioctl(fb_fd, GET_EBC_BUFFER, &buf_info) != 0) {
+         perror("GET_EBC_BUFFER failed\n");
+     }
+-- 
+2.17.1
+
