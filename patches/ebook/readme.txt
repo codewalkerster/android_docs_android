@@ -5,6 +5,7 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 ├── bootable
 │   └── recovery
 │       └── 0001-eink-minui-update-to-match-kernel-defined.patch   更新结构体定义，与最新的kernel ebc驱动匹配
+│       └── 0002-eink-minui-update-ebc-buf-info-with-kernel-define.patch  更新结构体定义，与最新的kernel ebc驱动匹配，使用tid_name标识用户，用于ebc buf管理，避免因为应用异常退出导致ebc_buf流失
 ├── device
 │   └── rockchip
 │       └── rk356x
@@ -33,6 +34,7 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 │               ├── 0008-regal-use-y4-commit-to-do-out-regal-mode.patch               regal相关补丁
 │               └── 0009-fix-resume-failed-by-regal-mode.patch                        regal相关补丁
 │               └── 0010-out-regal-mode-no-need-to-do-force-full.patch                regal相关补丁
+│               └── 0011-update-ebc_buf-info.patch                                    更新结构体定义，与最新的kernel ebc驱动匹配，使用tid_name标识用户，用于ebc buf管理，避免因为应用异常退出导致ebc_buf流失
 ├── kernel
 │   ├── 0001-mfd-rk808-disable-rk817-int-when-shutdown.patch                          更新rkr7_patches中的补丁0007-drivers-mfd-rk808-disable-rk817-int-when-shutdown.patch
 │   ├── 0002-drm-rockchip-ebc_dev-release-version-v2.13.patch                         ebc驱动更新，解决EPD_AUTO刷新不全问题
@@ -48,10 +50,12 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 │   ├── 0012-drm-rockchip-ebc_dev-release-version-v2.20.patch                         ebc驱动更新，ebc有buf请求时提前poweron
 │   ├── 0013-drm-rockchip-ebc_dev-release-version-v2.21.patch                         ebc驱动更新，ebc延迟200ms下电，减少一些场景下的频繁上下电问题
 │   └── 0014-arm64-dts-rockchip-config-the-pmic_sleep-internal-pu.patch               pmic sleep配置更新
+│   └── 0015-drm-rockchip-ebc_dev-release-version-v2.22.patch                         ebc驱动更新,使用tid_name标识用户，用于ebc buf管理，避免因为应用异常退出导致ebc_buf流失
 ├── packages
 │   └── apps
 │       └── NoteDemo
 │           └── 0001-paintworker-update-to-match-kernel-defined.patch                 更新结构体定义，与最新的kernel ebc驱动匹配
+│           └── 0002-update-ebc-buf_info-with-kernel-defined.patch                    更新结构体定义，与最新的kernel ebc驱动匹配，使用tid_name标识用户，用于ebc buf管理，避免因为应用异常退出导致ebc_buf流失
 ├── rkbin
 │   ├── 0001-rk3566-bl31-ultra-update-version-to-v2.10.patch                          bl31 bin更新，稳定性与功耗相关问题
 │   ├── 0002-rk3566-ddr-update-ultra-ddr-bin-to-v1.09.patch                           ddr bin更新，稳定性与功耗相关问题
@@ -59,7 +63,7 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
 └── u-boot
     └── 0001-rk_ebc_tcon-set-ebc-dclk.patch                                           ebc dclk补丁，可以更精确的分配到sdclk
 
-18 directories, 37 files
+18 directories, 41 files
 
 --------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------
