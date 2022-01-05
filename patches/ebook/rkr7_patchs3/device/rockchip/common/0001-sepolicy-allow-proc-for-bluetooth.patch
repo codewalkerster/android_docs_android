@@ -1,0 +1,40 @@
+From cb04132001ac50b3bc43a4713abf20a45cfe97f0 Mon Sep 17 00:00:00 2001
+From: Longjian Lin <llj@rock-chips.com>
+Date: Mon, 9 Aug 2021 16:47:53 +0800
+Subject: [PATCH] sepolicy: allow proc for bluetooth
+
+init.connectivity.rc: chmod bluetoot lpm and btwrite
+
+Change-Id: Icf4ffc449a51e293de630cba939e24c9048d7059
+Signed-off-by: Longjian Lin <llj@rock-chips.com>
+---
+ init.connectivity.rc                     | 2 ++
+ sepolicy/vendor/hal_bluetooth_default.te | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/init.connectivity.rc b/init.connectivity.rc
+index 9f55246f..1a345f00 100755
+--- a/init.connectivity.rc
++++ b/init.connectivity.rc
+@@ -3,6 +3,8 @@ on zygote-start
+ 
+ # for bluetooth
+     # bluetooth LPM
++    chmod 0220 /proc/bluetooth/sleep/lpm
++    chmod 0220 /proc/bluetooth/sleep/btwrite
+     chown bluetooth net_bt /proc/bluetooth/sleep/lpm
+     chown bluetooth net_bt /proc/bluetooth/sleep/btwrite    
+ 
+diff --git a/sepolicy/vendor/hal_bluetooth_default.te b/sepolicy/vendor/hal_bluetooth_default.te
+index 2a076d4b..c4cf804b 100644
+--- a/sepolicy/vendor/hal_bluetooth_default.te
++++ b/sepolicy/vendor/hal_bluetooth_default.te
+@@ -3,4 +3,5 @@ allow hal_bluetooth_default storage_device:chr_file { read write open ioctl };
+ allow hal_bluetooth_default serial_device:chr_file rw_file_perms;
+ allow hal_bluetooth_default sysfs:file write;
+ allow hal_bluetooth_default rk_bluetooth_file:file rw_file_perms;
++allow hal_bluetooth_default proc:file { open write };
+ binder_call(hal_bluetooth_default, zygote)
+-- 
+2.17.1
+
