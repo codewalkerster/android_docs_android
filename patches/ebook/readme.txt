@@ -1,3 +1,23 @@
+rkr7_patches3补丁说明：
+lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs3$ tree
+.
+├── device
+│   └── rockchip
+│       └── common
+│           └── 0001-sepolicy-allow-proc-for-bluetooth.patch 蓝牙权限相关补丁，解决因权限问题导致的蓝牙功耗异常
+├── hardware
+│   └── broadcom
+│       └── libbt
+│           └── 0001-BT-broadcom-fix-bt-wake-gpio-control.patch  蓝牙权限相关补丁，解决因权限问题导致的蓝牙功耗异常
+└── kernel
+    ├── 0001-drm-rockchip-ebc_dev-release-version-v2.23.patch    ebc驱动补丁，解决overlay的lut模式无法指定问题
+    ├── 0002-drm-rockchip-ebc_dev-release-version-v2.24.patch    ebc驱动补丁，解决手写死机问题
+    ├── 0003-drm-rockchip-dev_ebc-release-version-v2.25.patch    ebc驱动补丁，优化手写过程的背景更新机制，避免手写卡顿问题
+    └── 0004-drm-rockchip-dev_ebc-release-version-v2.26.patch    ebc驱动补丁，优化手写算法，大大降低手写功耗
+
+7 directories, 6 files
+--------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------
 rkr7_patches2补丁说明：
 
 lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs2$ tree
