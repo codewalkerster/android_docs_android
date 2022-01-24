@@ -1,0 +1,28 @@
+From 43651310345cf51cf38b7473cff405e51a3c7497 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Fri, 25 Feb 2022 17:41:42 +0800
+Subject: [PATCH 3/3] fix force full twice under regal mode
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I628a45866659dce85f5f2272bfcf2ddd81fdf460
+---
+ einkcompositorworker.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index 6a5c38d..723b93f 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -1304,7 +1304,8 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+   	if (composition->einkMode != EPD_FULL_GLD16
+ 		&& composition->einkMode != EPD_FULL_GLR16
+ 		&& composition->einkMode != EPD_PART_GLD16
+-		&& composition->einkMode != EPD_PART_GLR16) {
++		&& composition->einkMode != EPD_PART_GLR16
++		&& composition->einkMode != EPD_FORCE_FULL) {
+   		last_regal = !last_regal;
+   	}
+   }
+-- 
+2.17.1
+

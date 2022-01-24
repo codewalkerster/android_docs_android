@@ -1,0 +1,224 @@
+From 2e1031b767df28ca953c16cf12d9bff28afafd74 Mon Sep 17 00:00:00 2001
+From: wh <wanghang@rock-chips.com>
+Date: Mon, 7 Mar 2022 17:48:35 +0800
+Subject: [PATCH 1/2] NoteDemo: fix memory leak
+
+Signed-off-by: wh <wanghang@rock-chips.com>
+Change-Id: Ic827220dc1eb7a2d516b26aa1ab373be012583b0
+---
+ .../com/rockchip/notedemo/MainActivity.java   |  9 +++----
+ .../src/com/rockchip/notedemo/NoteJNI.java    |  9 -------
+ .../src/com/rockchip/notedemo/NoteView.java   | 26 ++++++++++++++-----
+ paintworker/paintworker.cpp                   | 14 +++++-----
+ 4 files changed, 31 insertions(+), 27 deletions(-)
+
+diff --git a/NoteDemo/src/com/rockchip/notedemo/MainActivity.java b/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
+index 9f6cca9..6dce382 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
++++ b/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
+@@ -45,10 +45,9 @@ import static java.lang.Thread.sleep;
+ public class MainActivity extends Activity {
+     private static final String TAG = "MainActivity";
+ 
+-    private static Context mContext;
+     private static Handler mHandler;
+ 
+-    public static NoteView mView;
++    private NoteView mView;
+     private Button mTestBtn;
+     private Button mSaveBtn;
+     private Button mBackgroundBtn;
+@@ -91,7 +90,7 @@ public class MainActivity extends Activity {
+         public void handleMessage(Message msg) {
+             switch (msg.what) {
+                 case USB_ATTACHED:
+-                    Toast toast = Toast.makeText(mContext, (String)msg.obj, Toast.LENGTH_LONG);
++                    Toast toast = Toast.makeText(MainActivity.this, (String)msg.obj, Toast.LENGTH_LONG);
+                     toast.show();
+                     break;
+             }
+@@ -164,11 +163,10 @@ public class MainActivity extends Activity {
+         Log.d(TAG, "Flash test : +++++++ onCreate(), initFlag = " + initFlag);
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_main);
+-        mContext = MainActivity.this;
+         mView = (NoteView) findViewById(R.id.note_view);
+         //设置竖屏
+         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+-        mNativeJNI = new NoteJNI(mContext);
++        mNativeJNI = new NoteJNI();
+         mBackgroundBtn = (Button) findViewById(R.id.background);
+         mBackgroundBtn.setOnClickListener(new View.OnClickListener() {
+             @Override
+@@ -527,6 +525,7 @@ public class MainActivity extends Activity {
+             unregisterReceiver(mBatInfoReceiver);
+             initFlag = false;
+         }
++        mView.destoryView();
+         super.onDestroy();
+     }
+ 
+diff --git a/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java b/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java
+index 48d10d5..5541dcd 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java
++++ b/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java
+@@ -14,7 +14,6 @@ import java.util.Vector;
+ public class NoteJNI {
+     private static final String TAG = "NoteJNI";
+ 
+-    private static Context mContext;
+     private static NoteView mNoteView;
+     private static Long mStartTime;
+     private static Long mEndTime;
+@@ -43,16 +42,8 @@ public class NoteJNI {
+     public native int native_set_pen_color(int penColor);
+     public native int native_draw_bitmap(Bitmap bitmap, int deviceId, int left, int top, int right, int bottom);
+ 
+-    public NoteJNI(Context context) {
+-        Log.d(TAG, "NoteJNI");
+-        mContext = context;
+-        getClassLoader();
+-        System.loadLibrary("paintworker");
+-    }
+-
+     public NoteJNI() {
+         Log.d(TAG, "NoteJNI");
+-        getClassLoader();
+         System.loadLibrary("paintworker");
+     }
+ 
+diff --git a/NoteDemo/src/com/rockchip/notedemo/NoteView.java b/NoteDemo/src/com/rockchip/notedemo/NoteView.java
+index aeaf92c..9b8504a 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/NoteView.java
++++ b/NoteDemo/src/com/rockchip/notedemo/NoteView.java
+@@ -46,7 +46,7 @@ public class NoteView extends View {
+     private int mDrawable = -1;
+ 
+     private Canvas mCanvas = null;
+-    private static Bitmap mBitmap = null; //绘制当前页面使用
++    private Bitmap mBitmap = null; //绘制当前页面使用
+     private Bitmap mNullBitmap = null;
+     private Bitmap mRecoveryBitmap = null; //
+     private Paint mPaint;//画笔
+@@ -77,10 +77,7 @@ public class NoteView extends View {
+     private Rect mRect;
+ 
+     public NoteView(Context context) {
+-        super(context);
+-        mContext = context;
+-		Log.d(TAG, "NoteView1");
+-        initView();
++        this(context, null);
+     }
+ 
+     public NoteView(Context context, AttributeSet attrs) {
+@@ -134,6 +131,22 @@ public class NoteView extends View {
+         super.onWindowFocusChanged(hasFocus);
+     }
+ 
++    public void destoryView() {
++        if (null != mBitmap) {
++            mBitmap.recycle();
++            mBitmap = null;
++        }
++        if (null != mNullBitmap) {
++            mNullBitmap.recycle();
++            mNullBitmap = null;
++        }
++
++        if (null != mPenThread) {
++            mPenThread.setEnable(false);
++            mPenThread = null;
++        }
++    }
++
+     @Override
+     public boolean dispatchTouchEvent(MotionEvent event) {
+         //Log.d(TAG, "x:" + x + ",y:" + y);
+@@ -193,7 +206,7 @@ public class NoteView extends View {
+         mPathList = new ArrayList<PointStruct>();
+         mNoteList = new ArrayList<ArrayList<PointStruct>>();
+         mRevokeNoteList = new ArrayList<ArrayList<PointStruct>>();
+-        mNativeJNI = new NoteJNI(mContext);
++        mNativeJNI = new NoteJNI();
+         mPenThread = new PenThread();
+     }
+ 
+@@ -272,6 +285,7 @@ public class NoteView extends View {
+         //Log.d(TAG, "pointStruct.action: " + pointStruct.action);
+         if (mBitmap == null || mCanvas == null) {
+             Log.d(TAG, "mBitmap == null || mCanvas == null ");
++            return;
+         }
+         if (pointStruct.action == PointStruct.ACTION_DOWN) {
+             //Log.d(TAG, "down");
+diff --git a/paintworker/paintworker.cpp b/paintworker/paintworker.cpp
+index 32fe324..6b63774 100755
+--- a/paintworker/paintworker.cpp
++++ b/paintworker/paintworker.cpp
+@@ -585,7 +585,7 @@ void PaintWorker::Up(int x, int y)
+     isDown = false;
+     lastX = 0;
+     lastY = 0;
+-    PointStruct point;
++    /*PointStruct point;
+     point.x = x;
+     point.y = y;
+     point.pressedValue = m_pressed_value;
+@@ -595,7 +595,7 @@ void PaintWorker::Up(int x, int y)
+     point.eraserEnable = isEraserEnable;
+     point.strokesEnable = isStrokesEnable;
+     mPathList.push_back(point);
+-    mNoteList.push_back(mPathList);
++    mNoteList.push_back(mPathList);*/
+     sendWritingDataToJava(lastX, lastY, x, y, m_pressed_value, PEN_BLACK_COLOR, PEN_WIDTH,
+                           ACTION_UP, isEraserEnable, isStrokesEnable);
+ }
+@@ -610,7 +610,7 @@ void PaintWorker::Down()
+ void PaintWorker::Move(int x, int y)
+ {
+     //ALOGD("---move--- x:%d,y:%d", x, y);
+-    PointStruct point;
++    //PointStruct point;
+     if(isStrokesEnable) {
+         int penWidth = 4;
+         if (m_pressed_value <= 2000) {
+@@ -630,7 +630,7 @@ void PaintWorker::Move(int x, int y)
+     commitWorker.set_win_info(x, y);
+     if (x != lastX || y != lastY)
+         commitWorker.drawBuf();
+-    point.x = x;
++    /*point.x = x;
+     point.y = y;
+     point.pressedValue = m_pressed_value;
+     point.penColor = pen_color;
+@@ -638,7 +638,7 @@ void PaintWorker::Move(int x, int y)
+     point.action = ACTION_MOVE;
+     point.eraserEnable = isEraserEnable;
+     point.strokesEnable = isStrokesEnable;
+-    mPathList.push_back(point);
++    mPathList.push_back(point);*/
+     //ALOGD("---point.penColor=%d \n", point.penColor);
+     sendWritingDataToJava(lastX, lastY, x, y, m_pressed_value, pen_color,
+                           pen_width, ACTION_MOVE, isEraserEnable, isStrokesEnable);
+@@ -648,7 +648,7 @@ void PaintWorker::Out(int x, int y)
+ {
+     //ALOGD("---zc--- outside");
+     isDown = false;
+-    PointStruct point;
++    /*PointStruct point;
+     point.x = x;
+     point.y = y;
+     point.pressedValue = m_pressed_value;
+@@ -658,7 +658,7 @@ void PaintWorker::Out(int x, int y)
+     point.eraserEnable = isEraserEnable;
+     point.strokesEnable = isStrokesEnable;
+     mPathList.push_back(point);
+-    mNoteList.push_back(mPathList);
++    mNoteList.push_back(mPathList);*/
+     sendWritingDataToJava(lastX, lastY, x, y, m_pressed_value, PEN_BLACK_COLOR, PEN_WIDTH,
+                           ACTION_OUT, isEraserEnable, isStrokesEnable);
+ }
+-- 
+2.17.1
+

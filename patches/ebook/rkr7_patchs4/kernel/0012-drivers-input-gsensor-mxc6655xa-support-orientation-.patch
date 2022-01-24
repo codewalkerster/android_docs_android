@@ -1,0 +1,103 @@
+From d0f7a64bfaba46808b8c391f55b3f33d4e706a2d Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Sun, 27 Feb 2022 11:30:52 +0800
+Subject: [PATCH 2/2] drivers: input: gsensor: mxc6655xa support orientation
+ detect
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I4629a49eb86bcc0480625aceed88e8c180c74f3d
+---
+ drivers/input/sensors/accel/mxc6655xa.c | 50 +++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ mode change 100755 => 100644 drivers/input/sensors/accel/mxc6655xa.c
+
+diff --git a/drivers/input/sensors/accel/mxc6655xa.c b/drivers/input/sensors/accel/mxc6655xa.c
+old mode 100755
+new mode 100644
+index 535a83a262f5d..080314383c97c
+--- a/drivers/input/sensors/accel/mxc6655xa.c
++++ b/drivers/input/sensors/accel/mxc6655xa.c
+@@ -45,6 +45,7 @@
+ #define	MXC6655_DEVICE_ID_A	0x05
+ #define MXC6655_POWER_DOWN	BIT(0)
+ #define MXC6655_INT_ENABLE	BIT(0)
++#define MXC6655_ORXY_INT_ENABLE	BIT(6)
+ #define MXC6655_RANGE		(16384 * 2)
+ #define MXC6655_PRECISION	12
+ #define MXC6655_BOUNDARY	(0x1 << (MXC6655_PRECISION - 1))
+@@ -109,6 +110,12 @@ static int sensor_init(struct i2c_client *client)
+ 			"%s:fail to set MXC6655_INT_MASK1.\n", __func__);
+ 		return result;
+ 	}
++	result = sensor_write_reg(client, MXC6655_INT_MASK0, 0);
++	if (result) {
++		dev_err(&client->dev,
++			"%s:fail to set MXC6655_INT_MASK0.\n", __func__);
++		return result;
++	}
+ 
+ 	return result;
+ }
+@@ -205,9 +212,50 @@ static int sensor_report_value(struct i2c_client *client)
+ 		}
+ 	}
+ 
++	if (sensor->pdata->wake_enable)
++		sensor_write_reg(client, MXC6655_INT_CLR0, 0xff);
++
+ 	return ret;
+ }
+ 
++static int sensor_suspend(struct i2c_client *client)
++{
++	int status = 0;
++	struct sensor_private_data *sensor =
++		(struct sensor_private_data *)i2c_get_clientdata(client);
++
++	/* Enable or Disable for orientation Interrupt */
++	if (sensor->pdata->wake_enable) {
++		status = sensor_write_reg(client, MXC6655_INT_MASK0, MXC6655_ORXY_INT_ENABLE);
++		if (status) {
++			dev_err(&client->dev,
++				"%s:fail to set MXC6655_INT_MASK0.\n", __func__);
++			return status;
++		}
++	}
++
++	return status;
++}
++
++static int sensor_resume(struct i2c_client *client)
++{
++	int status = 0;
++	struct sensor_private_data *sensor =
++		(struct sensor_private_data *)i2c_get_clientdata(client);
++
++	/* Enable or Disable for orientation Interrupt */
++	if (sensor->pdata->wake_enable) {
++		status = sensor_write_reg(client, MXC6655_INT_MASK0, 0);
++		if (status) {
++			dev_err(&client->dev,
++				"%s:fail to set MXC6655_INT_MASK0.\n", __func__);
++			return status;
++		}
++	}
++
++	return status;
++}
++
+ static struct sensor_operate gsensor_mxc6655_ops = {
+ 	.name		= "gs_mxc6655xa",
+ 	.type		= SENSOR_TYPE_ACCEL,
+@@ -224,6 +272,8 @@ static struct sensor_operate gsensor_mxc6655_ops = {
+ 	.active		= sensor_active,
+ 	.init		= sensor_init,
+ 	.report		= sensor_report_value,
++	.suspend	= sensor_suspend,
++	.resume		= sensor_resume,
+ };
+ 
+ static int gsensor_mxc6655_probe(struct i2c_client *client,
+-- 
+2.17.1
+

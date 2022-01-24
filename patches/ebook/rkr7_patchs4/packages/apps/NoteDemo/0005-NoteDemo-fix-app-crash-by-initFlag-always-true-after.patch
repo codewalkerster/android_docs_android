@@ -1,0 +1,42 @@
+From 5023e941b7cfcfb2cbce2a6806b6f4771255aa52 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 16 Feb 2022 17:08:19 +0800
+Subject: [PATCH 5/5] NoteDemo: fix app crash by initFlag always true after
+ onetime init
+
+02-16 05:05:35.840  1772  1772 F DEBUG   : backtrace:
+02-16 05:05:35.841  1772  1772 F DEBUG   :       #00 pc 000000000000aec4  /system/lib64/libpaintworker.so (PaintWorker::SetPenColor(int)+20) (BuildId: 95bc8a1e971f94f73a3876780c1704bc)
+02-16 05:05:35.841  1772  1772 F DEBUG   :       #01 pc 0000000000007eb8  /system/lib64/libpaintworker.so (native_set_pen_color(_JNIEnv*, _jobject*, int)+52) (BuildId: 95bc8a1e971f94f73a3876780c1704bc)
+02-16 05:05:35.841  1772  1772 F DEBUG   :       #02 pc 000000000013ced4  /apex/com.android.art/lib64/libart.so (art_quick_generic_jni_trampoline+148) (BuildId: 56495344ae4c174f65a79d37faa0e963)
+02-16 05:05:35.841  1772  1772 F DEBUG   :       #03 pc 0000000000133564  /apex/com.android.art/lib64/libart.so (art_quick_invoke_stub+548) (BuildId: 56495344ae4c174f65a79d37faa0e963)
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Ic6cc1e5582ba0fbcff783591748fb653dd145ef5
+---
+ NoteDemo/src/com/rockchip/notedemo/MainActivity.java | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/NoteDemo/src/com/rockchip/notedemo/MainActivity.java b/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
+index b213eab..9f6cca9 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
++++ b/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
+@@ -161,7 +161,7 @@ public class MainActivity extends Activity {
+ 
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+-        Log.d(TAG, "Flash test : +++++++ onCreate()");
++        Log.d(TAG, "Flash test : +++++++ onCreate(), initFlag = " + initFlag);
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_main);
+         mContext = MainActivity.this;
+@@ -525,6 +525,7 @@ public class MainActivity extends Activity {
+             mNativeJNI.native_exit();
+             mView.clear();
+             unregisterReceiver(mBatInfoReceiver);
++            initFlag = false;
+         }
+         super.onDestroy();
+     }
+-- 
+2.17.1
+

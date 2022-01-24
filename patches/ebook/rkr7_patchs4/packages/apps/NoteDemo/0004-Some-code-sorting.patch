@@ -1,0 +1,898 @@
+From 145a73ebb2e3208a4618fe10d1e48687a914eba9 Mon Sep 17 00:00:00 2001
+From: "president.chao" <president.chao@rock-chips.com>
+Date: Wed, 29 Dec 2021 08:42:00 +0000
+Subject: [PATCH 4/5] Some code sorting.
+
+Signed-off-by: president.chao <president.chao@rock-chips.com>
+Change-Id: I69e75938509aeb1e31d65ff77b0827e67ae62068
+---
+ .../com/rockchip/notedemo/MainActivity.java   | 171 ++++++++----------
+ .../src/com/rockchip/notedemo/NoteJNI.java    |   4 +-
+ .../src/com/rockchip/notedemo/NoteView.java   |  31 +---
+ paintworker/commitworker.cpp                  | 171 +++++++++---------
+ paintworker/commitworker.h                    |   2 +-
+ paintworker/paintworker.cpp                   |  34 +---
+ paintworker/paintworker.h                     |   4 +-
+ paintworker/wenote_jni.cpp                    |  75 +-------
+ 8 files changed, 184 insertions(+), 308 deletions(-)
+
+diff --git a/NoteDemo/src/com/rockchip/notedemo/MainActivity.java b/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
+index ac74de4..b213eab 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
++++ b/NoteDemo/src/com/rockchip/notedemo/MainActivity.java
+@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
+     private static final String ACTION_USB_STATE = "android.hardware.usb.action.USB_STATE";
+     private boolean mLastConnectStatus = true;
+     private boolean mConnectStatus = false;
+-    private static boolean initFlag = false;
++    public static boolean initFlag = false;
+ 
+     private Handler handler=new Handler() {
+         @Override
+@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
+             mNativeJNI.native_is_overlay_enable(true);
+             mNativeJNI.native_is_handwriting_enable(true);
+             if(NoteView.isEraserEnable) {
+-                mNativeJNI.native_clear(2);
++                mNativeJNI.native_clear();
+             }
+         }
+     };
+@@ -197,7 +197,7 @@ public class MainActivity extends Activity {
+                         if(!buttonLock) {
+                             buttonLock = true;
+                             //需要在子线程中处理的逻辑
+-                            mNativeJNI.native_clear(1);
++                            mNativeJNI.native_clear();
+                             mView.drawBitmap(0, mLeft, mTop, mRight, mBottom);
+                             mView.clear();
+                             buttonLock = false;
+@@ -274,7 +274,9 @@ public class MainActivity extends Activity {
+         mCancelBtn.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View view) {
+-                mNativeJNI.native_clear(1);
++                if(initFlag) {
++                    mNativeJNI.native_clear();
++                }
+                 MainActivity.this.finish();
+             }
+         });
+@@ -289,14 +291,16 @@ public class MainActivity extends Activity {
+                         if(!buttonLock) {
+                             buttonLock = true;
+                             //需要在子线程中处理的逻辑
+-                            mNativeJNI.native_is_handwriting_enable(false);
+-                            mNativeJNI.native_clear(0);
+-                            NoteView.isUndoEnable = true;
+-                            mView.unDo();
+-                            mView.postInvalidate();
+-                            NoteView.isUndoEnable = false;
+-                            if(!NoteView.isEraserEnable) {
+-                                mNativeJNI.native_is_handwriting_enable(true);
++                            if(initFlag) {
++                                mNativeJNI.native_is_handwriting_enable(false);
++                                mNativeJNI.native_clear();
++                                NoteView.isUndoEnable = true;
++                                mView.unDo();
++                                mView.postInvalidate();
++                                NoteView.isUndoEnable = false;
++                                if(!NoteView.isEraserEnable) {
++                                    mNativeJNI.native_is_handwriting_enable(true);
++                                }
+                             }
+                             buttonLock = false;
+                         }
+@@ -315,14 +319,16 @@ public class MainActivity extends Activity {
+                         if(!buttonLock) {
+                             buttonLock = true;
+                             //需要在子线程中处理的逻辑
+-                            mNativeJNI.native_is_handwriting_enable(false);
+-                            mNativeJNI.native_clear(0);
+-                            NoteView.isRedoEnable = true;
+-                            mView.reDo();
+-                            mView.postInvalidate();
+-                            NoteView.isRedoEnable = false;
+-                            if(!NoteView.isEraserEnable) {
+-                                mNativeJNI.native_is_handwriting_enable(true);
++                            if(initFlag) {
++                                mNativeJNI.native_is_handwriting_enable(false);
++                                mNativeJNI.native_clear();
++                                NoteView.isRedoEnable = true;
++                                mView.reDo();
++                                mView.postInvalidate();
++                                NoteView.isRedoEnable = false;
++                                if(!NoteView.isEraserEnable) {
++                                    mNativeJNI.native_is_handwriting_enable(true);
++                                }
+                             }
+                             buttonLock = false;
+                         }
+@@ -337,8 +343,10 @@ public class MainActivity extends Activity {
+             public void onClick(View view) {
+                 if(!buttonLock) {
+                     buttonLock = true;
+-                    mView.clear();
+-                    mNativeJNI.native_clear(1);
++                    if(initFlag) {
++                        mView.clear();
++                        mNativeJNI.native_clear();
++                    }
+                     buttonLock = false;
+                 }
+             }
+@@ -349,13 +357,17 @@ public class MainActivity extends Activity {
+             @Override
+             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                 if(isChecked) {
+-                    NoteView.isStrokesEnable = true;
+-                    mNativeJNI.native_clear(0);
+-                    mNativeJNI.native_strokes(true);
++                    if(initFlag) {
++                        NoteView.isStrokesEnable = true;
++                        mNativeJNI.native_clear();
++                        mNativeJNI.native_strokes(true);
++                    }
+                 } else {
+-                    NoteView.isStrokesEnable = false;
+-                    mNativeJNI.native_clear(0);
+-                    mNativeJNI.native_strokes(false);
++                    if(initFlag) {
++                        NoteView.isStrokesEnable = false;
++                        mNativeJNI.native_clear();
++                        mNativeJNI.native_strokes(false);
++                    }
+                 }
+             }
+         });
+@@ -365,39 +377,18 @@ public class MainActivity extends Activity {
+             @Override
+             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                 if(isChecked) {
+-                    mNativeJNI.native_is_handwriting_enable(false);
+-                    mNativeJNI.native_clear(0);
+-                    NoteView.isEraserEnable = true;
+-                    /*mNativeJNI.native_clear(0);
+-                    mView.setPenColor(PointStruct.PEN_WHITE_COLOR);
+-                    mNativeJNI.native_set_pen_color(true, PointStruct.PEN_BLACK_COLOR);*/
+-                    //mNativeJNI.native_eraser(true);
+-                    //mView.postInvalidate();
+-                    /*try {
+-                        sleep(800);
+-                    } catch (InterruptedException e) {
+-                        // TODO Auto-generated catch block
+-                        e.printStackTrace();
+-                    }*/
+-                    //mNativeJNI.native_is_handwriting_enable(true);
++                    if(initFlag) {
++                        mNativeJNI.native_is_handwriting_enable(false);
++                        mNativeJNI.native_clear();
++                        NoteView.isEraserEnable = true;
++                    }
+                 } else {
+-                    mNativeJNI.native_clear(0);
+-                    NoteView.isEraserEnable = false;
+-                    mNativeJNI.native_is_handwriting_enable(true);
+-                    /*mNativeJNI.native_clear(0);
+-                    mView.setPenColor(PointStruct.PEN_BLACK_COLOR);
+-                    mNativeJNI.native_set_pen_color(true, PointStruct.PEN_BLACK_COLOR);*/
+-                    //mNativeJNI.native_eraser(false);
+-                    //mView.postInvalidate();
+-                    /*try {
+-                        sleep(800);
+-                    } catch (InterruptedException e) {
+-                        // TODO Auto-generated catch block
+-                        e.printStackTrace();
+-                    }*/
+-                    //mNativeJNI.native_is_handwriting_enable(true);
++                    if(initFlag) {
++                        mNativeJNI.native_clear();
++                        NoteView.isEraserEnable = false;
++                        mNativeJNI.native_is_handwriting_enable(true);
++                    }
+                 }
+-                //mNativeJNI.native_is_overlay_enable(true);
+             }
+         });
+ 
+@@ -409,27 +400,29 @@ public class MainActivity extends Activity {
+                     case 0:
+                         if(initFlag) {
+                             mView.setPenColor(PointStruct.PEN_BLACK_COLOR);
+-                            mNativeJNI.native_set_pen_color(true, PointStruct.PEN_BLACK_COLOR);
++                            mNativeJNI.native_set_pen_color(PointStruct.PEN_BLACK_COLOR);
+                         }
+                         break;
+                     /*case 1:
+-                        mNativeJNI.native_clear(0);
++                        mNativeJNI.native_clear();
+                         mView.setPenColor(PointStruct.PEN_BLUE_COLOR);
+-                        mNativeJNI.native_set_pen_color(true, PointStruct.PEN_BLUE_COLOR);
++                        mNativeJNI.native_set_pen_color(PointStruct.PEN_BLUE_COLOR);
+                         break;
+                     case 2:
+-                        mNativeJNI.native_clear(0);
++                        mNativeJNI.native_clear();
+                         mView.setPenColor(PointStruct.PEN_GREEN_COLOR);
+-                        mNativeJNI.native_set_pen_color(true, PointStruct.PEN_GREEN_COLOR);
++                        mNativeJNI.native_set_pen_color(PointStruct.PEN_GREEN_COLOR);
+                         break;
+                     case 3:
+-                        mNativeJNI.native_clear(0);
++                        mNativeJNI.native_clear();
+                         mView.setPenColor(PointStruct.PEN_RED_COLOR);
+-                        mNativeJNI.native_set_pen_color(true, PointStruct.PEN_RED_COLOR);
++                        mNativeJNI.native_set_pen_color(PointStruct.PEN_RED_COLOR);
+                         break;*/
+                     case 1:
+-                        mView.setPenColor(PointStruct.PEN_WHITE_COLOR);
+-                        mNativeJNI.native_set_pen_color(true, PointStruct.PEN_WHITE_COLOR);
++                        if(initFlag) {
++                            mView.setPenColor(PointStruct.PEN_WHITE_COLOR);
++                            mNativeJNI.native_set_pen_color(PointStruct.PEN_WHITE_COLOR);
++                        }
+                         break;
+                 }
+             }
+@@ -471,7 +464,7 @@ public class MainActivity extends Activity {
+                     Log.d(TAG, "screen unlock");
+                 } else if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(action)) {
+                     Log.d(TAG, "Home,Task");
+-                    //mNativeJNI.native_clear(1);
++                    //mNativeJNI.native_clear();
+                     //mView.postInvalidate();
+                 } /*else if (ACTION_USB_STATE.equals(action)) {
+                     mConnectStatus = intent.getExtras().getBoolean("connected");
+@@ -513,8 +506,10 @@ public class MainActivity extends Activity {
+     @Override
+     public void onPause() {
+         Log.d(TAG, "Flash test : +++++++ onPause()");
+-        mNativeJNI.native_is_handwriting_enable(false);
+-        mNativeJNI.native_is_overlay_enable(false);
++        if(initFlag) {
++            mNativeJNI.native_is_handwriting_enable(false);
++            mNativeJNI.native_is_overlay_enable(false);
++        }
+         super.onPause();
+     }
+ 
+@@ -526,9 +521,11 @@ public class MainActivity extends Activity {
+             mHandler.removeCallbacks(mInitRunnable);
+             mHandler = null;
+         }
+-        mView.exitNativeOnly();
+-        mView.clear();
+-        unregisterReceiver(mBatInfoReceiver);
++        if(initFlag) {
++            mNativeJNI.native_exit();
++            mView.clear();
++            unregisterReceiver(mBatInfoReceiver);
++        }
+         super.onDestroy();
+     }
+ 
+@@ -536,33 +533,13 @@ public class MainActivity extends Activity {
+     public boolean onKeyDown(int keyCode, KeyEvent event) {
+         Log.d(TAG, "keyCode: " + keyCode);
+         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_UNKNOWN) {
+-            /*NoteView.isChangeOverlay = true;
+-            mView.postInvalidate();*/
+-            mNativeJNI.native_is_overlay_enable(false);
+-            //mNativeJNI.native_change_overlay(0);
++            if(initFlag) {
++                mNativeJNI.native_is_overlay_enable(false);
++            }
+         }
+         return super.onKeyDown(keyCode, event);
+     }
+ 
+-/*    @Override
+-    public boolean dispatchTouchEvent(MotionEvent event) {
+-        int x = (int)event.getRawX();
+-        int y = (int)event.getRawY();
+-        Log.d(TAG, "x:" + x + ",y:" + y);
+-        switch (event.getAction()) {
+-            case MotionEvent.ACTION_DOWN:
+-                Log.d(TAG, "ACTION_DOWN: ");
+-                break;
+-            case MotionEvent.ACTION_UP:
+-                Log.d(TAG, "ACTION_UP: ");
+-                break;
+-            case MotionEvent.ACTION_MOVE:
+-                Log.d(TAG, "ACTION_MOVE: ");
+-                break;
+-        }
+-        return super.dispatchTouchEvent(event);
+-    }*/
+-
+     public static String getProperty(String key, String defaultValue) {
+         String value = defaultValue;
+         try {
+diff --git a/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java b/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java
+index 8236052..48d10d5 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java
++++ b/NoteDemo/src/com/rockchip/notedemo/NoteJNI.java
+@@ -26,7 +26,7 @@ public class NoteJNI {
+     // JNI
+     public native int native_init(Rect rect, boolean isFilterFixedArea, Rect filterRect);
+     public native int native_exit();
+-    public native int native_clear(int clearMode);
++    public native int native_clear();
+     public native int native_undo(int left, int top, int right, int bottom);
+     public native int native_redo(int left, int top, int right, int bottom);
+     public native int native_redraw(int left, int top, int right, int bottom);
+@@ -40,7 +40,7 @@ public class NoteJNI {
+     public native int native_show_draw_point(int left, int top, int right, int bottom);
+     public static native ArrayList<PointStruct> native_get_notelist();
+     public native int native_set_pen_width(int penWidth);
+-    public native int native_set_pen_color(boolean isInitColor, int penColor);
++    public native int native_set_pen_color(int penColor);
+     public native int native_draw_bitmap(Bitmap bitmap, int deviceId, int left, int top, int right, int bottom);
+ 
+     public NoteJNI(Context context) {
+diff --git a/NoteDemo/src/com/rockchip/notedemo/NoteView.java b/NoteDemo/src/com/rockchip/notedemo/NoteView.java
+index 8b20ab6..aeaf92c 100755
+--- a/NoteDemo/src/com/rockchip/notedemo/NoteView.java
++++ b/NoteDemo/src/com/rockchip/notedemo/NoteView.java
+@@ -105,31 +105,14 @@ public class NoteView extends View {
+     @Override
+     protected void onDraw(android.graphics.Canvas canvas) {
+         super.onDraw(canvas);
+-        //Log.d(TAG, "isChangeOverlay: " + isChangeOverlay + ",isEraserEnable: " + isEraserEnable);\
+         Log.d(TAG, "onDraw: ");
+         if(mBitmap != null) {
+             canvas.drawBitmap(mBitmap, 0, 0, null);
+-            if (isChangeOverlay) {
++            if (isChangeOverlay && MainActivity.initFlag) {
+                 mNativeJNI.native_is_overlay_enable(false);
+                 isChangeOverlay = false;
+             }
+         }
+-        /*if(mBitmap != null && mNullBitmap != null) {
+-            if (isEraserEnable) {
+-                canvas.drawBitmap(mNullBitmap, 0, 0, null);
+-                isUndoEnable = false;
+-            } else if (isRecoveryEnable) {
+-                canvas.drawBitmap(mRecoveryBitmap, 0, 0, null);
+-                isRecoveryEnable = false;
+-            } else {
+-                Log.d(TAG, "onDraw: ");
+-                canvas.drawBitmap(mBitmap, 0, 0, null);
+-            }
+-            if (isChangeOverlay && !isEraserEnable) {
+-                mNativeJNI.native_is_overlay_enable(false);
+-                isChangeOverlay = false;
+-            }
+-        }*/
+     }
+ 
+     @Override
+@@ -140,9 +123,11 @@ public class NoteView extends View {
+                 isChangeOverlay = true;
+                 postInvalidate();
+             }
+-            mNativeJNI.native_is_handwriting_enable(false);
++            if(MainActivity.initFlag) {
++                mNativeJNI.native_is_handwriting_enable(false);
++            }
+         } else {
+-            if(!isEraserEnable) {
++            if(!isEraserEnable && MainActivity.initFlag) {
+                 mNativeJNI.native_is_handwriting_enable(true);
+             }
+         }
+@@ -260,10 +245,6 @@ public class NoteView extends View {
+         return initStatus;
+     }
+ 
+-    public void exitNativeOnly() {
+-        mNativeJNI.native_exit();
+-    }
+-
+     public void clear() {
+         if (mBitmap != null) {
+             Log.d(TAG, "clear: ");
+@@ -273,7 +254,7 @@ public class NoteView extends View {
+             mPointList.clear();
+             mCount = 0;
+         }
+-        if (mPointList != null) {
++        if (mNoteList != null) {
+             mNoteList.clear();
+         }
+         if (mPathList != null) {
+diff --git a/paintworker/commitworker.cpp b/paintworker/commitworker.cpp
+index 182730b..2e90e0d 100755
+--- a/paintworker/commitworker.cpp
++++ b/paintworker/commitworker.cpp
+@@ -75,77 +75,77 @@ static int *gray16_buffer;
+ 
+ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int vir_width, Rect *rect)
+ {
+-	int i, j;
+-	char *dst_r1, *dst_r2;
+-	int *src_r1, *src_r2;
+-	int h_div2 = fb_height / 2;
+-	int w_div6 = vir_width / 6;
+-	uint8_t r, g, b;
+-
+-	int win_x1;
+-	int win_x2;
+-	int win_y1;
+-	int win_y2;
+-
+-	win_x1 = rect->left / 6;
+-	win_x2 = rect->right / 6 + 1;
+-	win_y1 = rect->top / 2;
+-	win_y2 = rect->bottom / 2 +1;
+-
+-	if (win_x2 >= w_div6)
+-		win_x2 = w_div6;
+-	if (win_y2 >= h_div2)
+-		win_y2 = h_div2;
+-
+-	dst += (win_y1 * vir_width) + (win_x1 * 3);
+-	src += (win_y1 * vir_width * 2) + (win_x1 * 6);
+-
+-	for (i = win_y1; i < win_y2; i++) {
+-		dst_r1 = dst;
+-		dst_r2 = dst_r1 + (vir_width >> 1);
+-		src_r1 = src;
+-		src_r2 = src_r1 + vir_width;
+-		int row_mod3 = i % 3;
+-		if (row_mod3 == 0) {
+-			for (j = win_x1; j < win_x2; j++) {
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = r | (b<<4);
+-				*dst_r2++ = g | (r<<4);
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = g | (r<<4);
+-				*dst_r2++ = b | (g<<4);
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = b | (g<<4);
+-				*dst_r2++ = r | (b<<4);
+-			}
+-		} else if (row_mod3 == 1) {
+-			for (j = win_x1; j < win_x2; j++) {
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = b | (g<<4);
+-				*dst_r2++ = r | (b<<4);
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = r | (b<<4);
+-				*dst_r2++ = g | (r<<4);
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = g | (r<<4);
+-				*dst_r2++ = b | (g<<4);
+-			}
+-		} else if (row_mod3 == 2) {
+-			for (j = win_x1; j < win_x2; j++) {
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = g | (r<<4);
+-				*dst_r2++ = b | (g<<4);
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = b | (g<<4);
+-				*dst_r2++ = r | (b<<4);
+-				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+-				*dst_r1++ = r | (b<<4);
+-				*dst_r2++ = g | (r<<4);
+-			}
+-		}
+-		dst += vir_width;
+-		src += (vir_width<<1);
+-	}
++    int i, j;
++    char *dst_r1, *dst_r2;
++    int *src_r1, *src_r2;
++    int h_div2 = fb_height / 2;
++    int w_div6 = vir_width / 6;
++    uint8_t r, g, b;
++
++    int win_x1;
++    int win_x2;
++    int win_y1;
++    int win_y2;
++
++    win_x1 = rect->left / 6;
++    win_x2 = rect->right / 6 + 1;
++    win_y1 = rect->top / 2;
++    win_y2 = rect->bottom / 2 +1;
++
++    if (win_x2 >= w_div6)
++        win_x2 = w_div6;
++    if (win_y2 >= h_div2)
++        win_y2 = h_div2;
++
++    dst += (win_y1 * vir_width) + (win_x1 * 3);
++    src += (win_y1 * vir_width * 2) + (win_x1 * 6);
++
++    for (i = win_y1; i < win_y2; i++) {
++        dst_r1 = dst;
++        dst_r2 = dst_r1 + (vir_width >> 1);
++        src_r1 = src;
++        src_r2 = src_r1 + vir_width;
++        int row_mod3 = i % 3;
++        if (row_mod3 == 0) {
++            for (j = win_x1; j < win_x2; j++) {
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = r | (b<<4);
++                *dst_r2++ = g | (r<<4);
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = g | (r<<4);
++                *dst_r2++ = b | (g<<4);
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = b | (g<<4);
++                *dst_r2++ = r | (b<<4);
++            }
++        } else if (row_mod3 == 1) {
++            for (j = win_x1; j < win_x2; j++) {
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = b | (g<<4);
++                *dst_r2++ = r | (b<<4);
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = r | (b<<4);
++                *dst_r2++ = g | (r<<4);
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = g | (r<<4);
++                *dst_r2++ = b | (g<<4);
++            }
++        } else if (row_mod3 == 2) {
++            for (j = win_x1; j < win_x2; j++) {
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = g | (r<<4);
++                *dst_r2++ = b | (g<<4);
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = b | (g<<4);
++                *dst_r2++ = r | (b<<4);
++                RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
++                *dst_r1++ = r | (b<<4);
++                *dst_r2++ = g | (r<<4);
++            }
++        }
++        dst += vir_width;
++        src += (vir_width<<1);
++    }
+ }
+ 
+ void Luma8bit_to_4bit_bw(short int  *src,  char *dst, int w)
+@@ -436,7 +436,7 @@ void CommitWorker::Routine()
+     }
+ }
+ 
+-void CommitWorker::clearScreen(bool isSendBuffer)
++void CommitWorker::clearScreen()
+ {
+     ALOGD("---zc---clearScreen");
+ 
+@@ -445,23 +445,20 @@ void CommitWorker::clearScreen(bool isSendBuffer)
+     else
+         memset(rgba_buffer, 0xff, ebc_buf_info.height * ebc_buf_info.width);
+ 
+-
+     memset(gray16_buffer, 0xff, ebc_buf_info.height * ebc_buf_info.width >> 1);
+ 
+-    if(isSendBuffer) {
+-        struct ebc_buf_info_t buf_info;
+-
+-        unsigned long vaddr_real = intptr_t(ebc_buffer_base);
+-        buf_info.win_x1 = 0;
+-        buf_info.win_y1 = 0;
+-        buf_info.win_y2 = ebc_buf_info.height;
+-        buf_info.win_x2 = ebc_buf_info.width;
+-        buf_info.epd_mode = EPD_OVERLAY;
++    struct ebc_buf_info_t buf_info;
+ 
+-        if(ioctl(ebc_fd, EBC_SEND_OSD_BUFFER,&buf_info) != 0) {
+-            fprintf(stderr,"SET_EBC_SEND_BUFFER failed\n");
+-            return;
+-        }
++    unsigned long vaddr_real = intptr_t(ebc_buffer_base);
++    buf_info.win_x1 = 0;
++    buf_info.win_y1 = 0;
++    buf_info.win_y2 = ebc_buf_info.height;
++    buf_info.win_x2 = ebc_buf_info.width;
++    buf_info.epd_mode = EPD_OVERLAY;
++
++    if(ioctl(ebc_fd, EBC_SEND_OSD_BUFFER,&buf_info) != 0) {
++        fprintf(stderr,"SET_EBC_SEND_BUFFER failed\n");
++        return;
+     }
+ 
+ }
+@@ -474,7 +471,7 @@ void CommitWorker::dump(void)
+     char data_name_1[] = "/data/dump/2.bin";
+     //sprintf(data_name,"/data/dump/gray8bit_%d_%d.bin", ebc_buf_info.width, ebc_buf_info.height);
+     FILE *file = fopen(data_name, "wb");
+-    if(NULL == rgba_buffer) 
++    if(NULL == rgba_buffer)
+         ALOGD("NULL == rgba_buffer");
+     if (file) {
+         if (ebc_buf_info.panel_color == 2)
+diff --git a/paintworker/commitworker.h b/paintworker/commitworker.h
+index dacc496..dfc4aee 100755
+--- a/paintworker/commitworker.h
++++ b/paintworker/commitworker.h
+@@ -121,7 +121,7 @@ public:
+     void setPenWidth(int width);
+     void setPenColor(int color);
+     void drawBuf(void);
+-    void clearScreen(bool isSendBuffer);
++    void clearScreen();
+     void dump(void);
+     void IsOverlayEnable(bool isOverlayEnable);
+     void setIsSendBuffer(bool isSendBuffer);
+diff --git a/paintworker/paintworker.cpp b/paintworker/paintworker.cpp
+index b73c074..32fe324 100755
+--- a/paintworker/paintworker.cpp
++++ b/paintworker/paintworker.cpp
+@@ -1,5 +1,3 @@
+-
+-
+ /*
+  * Copyright (C) 2018 Fuzhou Rockchip Electronics Co.Ltd.
+  *
+@@ -235,7 +233,7 @@ void PaintWorker::ReDrawPoint(int x, int y, int action, int penWidth, int penCol
+             if(!EraserEnable) {
+                 commitWorker.setPenWidth(penWidth);
+                 mPaint.setStrokeWidth(penWidth);
+-                SetPenColor(false, penColor);
++                SetPenColor(penColor);
+                 canvas->drawLine(RelastX, RelastY, x, y, mPaint);
+             }  else {
+                 commitWorker.setPenWidth(penWidth);
+@@ -277,7 +275,7 @@ int PaintWorker::Undo(int left, int top, int right, int bottom)
+     if(mNoteList.size() > 0) {
+         mRevokeNoteList.push_back(mNoteList.back());
+         mNoteList.pop_back();
+-        Clear(0);
++        Clear();
+         list<list<PointStruct>>::iterator itPath;
+         list<PointStruct>::iterator itPoint;
+         list<PointStruct> list_tmp;
+@@ -291,7 +289,7 @@ int PaintWorker::Undo(int left, int top, int right, int bottom)
+             }
+         }
+         ShowDrawPoint(left, top, right, bottom);
+-        SetPenColor(true, pen_color);
++        SetPenColor(pen_color);
+         return 1;
+     } else {
+         //ALOGD("----noteList.size <= 0");
+@@ -304,7 +302,7 @@ int PaintWorker::Redo(int left, int top, int right, int bottom)
+     if(mRevokeNoteList.size() > 0) {
+         mNoteList.push_back(mRevokeNoteList.back());
+         mRevokeNoteList.pop_back();
+-        Clear(0);
++        Clear();
+         list<list<PointStruct>>::iterator itPath;
+         list<PointStruct>::iterator itPoint;
+         list<PointStruct> list_tmp;
+@@ -318,7 +316,7 @@ int PaintWorker::Redo(int left, int top, int right, int bottom)
+             }
+         }
+         ShowDrawPoint(left, top, right, bottom);
+-        SetPenColor(true, pen_color);
++        SetPenColor(pen_color);
+         return 1;
+     } else {
+         //ALOGD("----noteList.size <= 0");
+@@ -457,11 +455,9 @@ void PaintWorker::SetPenWidth(int width)
+     this->pen_width = width;
+ }
+ 
+-void PaintWorker::SetPenColor(bool isInitColor, int color)
++void PaintWorker::SetPenColor(int color)
+ {
+-    //ALOGD("---isInitColor=%d,color=%d \n", isInitColor, color);
+-    if(isInitColor)
+-        this->pen_color = color;
++    this->pen_color = color;
+     if (color == PEN_BLACK_COLOR) {
+         mPaint.setARGB(255, 0, 0, 0);
+         commitWorker.setPenColor(PEN_BLACK_COLOR);
+@@ -504,22 +500,10 @@ void PaintWorker::SetPenColor(bool isInitColor, int color)
+  * Copyright: Rockchip
+  * Author: ZhuangChao
+  * Function: clear
+- * Description: There are three clearModes, 1.Use the incomplete clearScreen method;
+- * 2.Clear the noteVector and use the complete clearScreen method;
+- * 3.Use the complete clearScreen method;
+- * Input: The clearMode is the mode to control clearing, it is 0, 1, or 2.
+  */
+-void PaintWorker::Clear(int clearMode)
++void PaintWorker::Clear()
+ {
+-    if(clearMode == 0) {//只清除rga buffer
+-        commitWorker.clearScreen(false);
+-    } else if(clearMode == 1) {//清空notelist，清除rga_buffer、gray16_buffer
+-        mNoteList.clear();
+-        mRevokeNoteList.clear();
+-        commitWorker.clearScreen(true);
+-    } else if (clearMode == 2) {//清除rga_buffer、gray16_buffer,送显
+-        commitWorker.clearScreen(true);
+-    }
++    commitWorker.clearScreen();
+ }
+ 
+ void PaintWorker::Dump(void)
+diff --git a/paintworker/paintworker.h b/paintworker/paintworker.h
+index f2432a6..a33d78d 100755
+--- a/paintworker/paintworker.h
++++ b/paintworker/paintworker.h
+@@ -69,9 +69,9 @@ public:
+     void ExitPaintWorker();
+     void ReDrawPoint(int x, int y, int action, int penWidth, int penColor, bool isEraserEnable, bool isStrokesEnable);
+     void ShowDrawPoint(int left, int top, int right, int bottom);
+-    void SetPenColor(bool isInitColor, int color);
++    void SetPenColor(int color);
+     void SetPenWidth(int width);
+-    void Clear(int clearMode);
++    void Clear();
+     void IsHandwritingEnable(bool isHangdWritingEnable);
+     void Dump(void);
+     int Undo(int left, int top, int right, int bottom);
+diff --git a/paintworker/wenote_jni.cpp b/paintworker/wenote_jni.cpp
+index fb7017d..0139c50 100755
+--- a/paintworker/wenote_jni.cpp
++++ b/paintworker/wenote_jni.cpp
+@@ -131,13 +131,6 @@ char* jstringTostring(JNIEnv* env, jstring jstr)
+     return rtn;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_init
+- * Description: Init the PaintWorker thread.
+- * Input: The jrect means the canvas's rect, it contains left, top, right, bottom.
+- */
+ JNIEXPORT jint JNICALL native_init(JNIEnv * env, jobject thiz, jobject jrect,
+                                         jboolean isFilterFixedArea, jobject filterRect)
+ {
+@@ -193,26 +186,13 @@ JNIEXPORT jint JNICALL native_init(JNIEnv * env, jobject thiz, jobject jrect,
+     return JNI_OK;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_clear
+- * Description: Clear Screen with clearMode
+- * Input: The clearMode means use which mode to clear, it is 0 or 1.
+- */
+-JNIEXPORT jint JNICALL native_clear(JNIEnv * env, jobject thiz, jint clearMode)
++JNIEXPORT jint JNICALL native_clear(JNIEnv * env, jobject thiz)
+ {
+     LOGD("Flash test : +++++++++++++ native_clear()");
+-    paintWorker->Clear(clearMode);
++    paintWorker->Clear();
+     return JNI_OK;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_clear
+- * Description: Exit the PaintWorker thread.
+- */
+ JNIEXPORT jint JNICALL native_exit(JNIEnv * env, jobject thiz)
+ {
+     LOGD("Flash test : +++++++++++++ native_exit()");
+@@ -231,13 +211,6 @@ JNIEXPORT jint JNICALL native_exit(JNIEnv * env, jobject thiz)
+     return JNI_OK;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_undo
+- * Description: Undo the last drawing.
+- * Input: Use left, top, right, bottom to refresh the screen.
+- */
+ JNIEXPORT jint JNICALL native_undo(JNIEnv * env, jobject thiz, jint left, jint top, jint right, jint bottom)
+ {
+     LOGD("Flash test : +++++++++++++ native_undo()");
+@@ -246,13 +219,6 @@ JNIEXPORT jint JNICALL native_undo(JNIEnv * env, jobject thiz, jint left, jint t
+     return status;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_undo
+- * Description: Undo the last drawing.
+- * Input: Use left, top, right, bottom to refresh the screen.
+- */
+ JNIEXPORT jint JNICALL native_redo(JNIEnv * env, jobject thiz, jint left, jint top, jint right, jint bottom)
+ {
+     LOGD("Flash test : +++++++++++++ native_redo()");
+@@ -261,13 +227,6 @@ JNIEXPORT jint JNICALL native_redo(JNIEnv * env, jobject thiz, jint left, jint t
+     return status;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_redraw
+- * Description: Playback the process of drawing.
+- * Input: Use left, top, right, bottom to refresh the screen.
+- */
+ JNIEXPORT jint JNICALL native_redraw(JNIEnv * env, jobject thiz, jint left, jint top, jint right, jint bottom)
+ {
+     LOGD("Flash test : +++++++++++++ native_redraw()");
+@@ -275,13 +234,6 @@ JNIEXPORT jint JNICALL native_redraw(JNIEnv * env, jobject thiz, jint left, jint
+     return JNI_OK;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_eraser
+- * Description: Switch the pen's mode from pen to eraser, or from eraser to pen, it's up to the mode.
+- * Input: The mode decides the pen's mode.
+- */
+ JNIEXPORT jint JNICALL native_eraser(JNIEnv * env, jobject thiz, jboolean isEraserEnable)
+ {
+     LOGD("Flash test : +++++++++++++ native_eraser()");
+@@ -289,14 +241,6 @@ JNIEXPORT jint JNICALL native_eraser(JNIEnv * env, jobject thiz, jboolean isEras
+     return JNI_OK;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_set_is_drawing
+- * Description: Set the flag isDrawing, it will prohibit other drawing operations
+- * while already existing drawing operations are in progress.
+- * Input: The isDrawing is a lock to control drawing, it is 0 or 1.
+- */
+ JNIEXPORT jint JNICALL native_is_handwriting_enable(JNIEnv * env, jobject thiz, jboolean isHangdWritingEnable)
+ {
+     LOGD("Flash test : +++++++++++++ native_is_handwriting_enable()");
+@@ -304,13 +248,6 @@ JNIEXPORT jint JNICALL native_is_handwriting_enable(JNIEnv * env, jobject thiz,
+     return JNI_OK;
+ }
+ 
+-/*
+- * Copyright: Rockchip
+- * Author: ZhuangChao
+- * Function: native_recovery
+- * Description: Recovery the drawing information from Screen_Off to Screen_On.
+- * Input: Use left, top, right, bottom to refresh the screen.
+- */
+ JNIEXPORT jint JNICALL native_recovery(JNIEnv * env, jobject thiz, jint left, jint top, jint right, jint bottom)
+ {
+     LOGD("Flash test : +++++++++++++ native_recovery()");
+@@ -398,10 +335,10 @@ JNIEXPORT jint JNICALL native_set_pen_width(JNIEnv * env, jobject thiz, jint pen
+     return JNI_OK;
+ }
+ 
+-JNIEXPORT jint JNICALL native_set_pen_color(JNIEnv * env, jobject thiz, jboolean isInitColor, jint penColor)
++JNIEXPORT jint JNICALL native_set_pen_color(JNIEnv * env, jobject thiz, jint penColor)
+ {
+     LOGD("Flash test : +++++++++++++ native_set_pen_color()");
+-    paintWorker->SetPenColor(isInitColor, penColor);
++    paintWorker->SetPenColor(penColor);
+     return JNI_OK;
+ }
+ 
+@@ -452,7 +389,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_intelgine_handwrite_HandWrite_getPixels(JN
+ static JNINativeMethod gMethods[] = {
+     { "native_init",    "(Landroid/graphics/Rect;ZLandroid/graphics/Rect;)I",   (void*) native_init },
+     { "native_exit",    "()I",  (void*) native_exit },
+-    { "native_clear",       "(I)I",  (void*) native_clear },
++    { "native_clear",       "()I",  (void*) native_clear },
+     { "native_undo",      "(IIII)I",  (void*) native_undo },
+     { "native_redo",      "(IIII)I",  (void*) native_redo },
+     { "native_redraw",      "(IIII)I",  (void*) native_redraw },
+@@ -466,7 +403,7 @@ static JNINativeMethod gMethods[] = {
+     { "native_test_draw",      "(Z)I",  (void*) native_test_draw },
+     { "native_get_notelist",      "()Ljava/util/ArrayList;",  (void*) native_get_notelist },
+     { "native_set_pen_width",      "(I)I",  (void*) native_set_pen_width },
+-    { "native_set_pen_color",      "(ZI)I",  (void*) native_set_pen_color },
++    { "native_set_pen_color",      "(I)I",  (void*) native_set_pen_color },
+     { "native_draw_bitmap",      "(Landroid/graphics/Bitmap;IIIII)I",  (void*) native_draw_bitmap }
+ };
+ 
+-- 
+2.17.1
+

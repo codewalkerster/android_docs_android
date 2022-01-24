@@ -1,0 +1,243 @@
+From 616a7f6fc9cecb7327fe798b9f3449a639296c0b Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 9 Feb 2022 11:43:14 +0800
+Subject: [PATCH 2/5] paintworker: improve handwrite speed, add latency log
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I7cccbaaaec8b71b2ca75231eca77208bd52d4df8
+---
+ paintworker/commitworker.cpp | 61 +++++++++++++++++++++++++++---------
+ paintworker/commitworker.h   |  1 +
+ paintworker/getevent.cpp     |  4 +++
+ paintworker/paintworker.cpp  | 18 ++++++++---
+ 4 files changed, 65 insertions(+), 19 deletions(-)
+
+diff --git a/paintworker/commitworker.cpp b/paintworker/commitworker.cpp
+index 19604c3..182730b 100755
+--- a/paintworker/commitworker.cpp
++++ b/paintworker/commitworker.cpp
+@@ -52,7 +52,7 @@
+ 
+ using namespace android;
+ 
+-static pthread_mutex_t win_info_lock;
++//static pthread_mutex_t win_info_lock;
+ static int ebc_fd = -1;
+ static bool mIsSendBuffer = false;
+ static bool mIsSyncBitmap = false;
+@@ -277,7 +277,7 @@ int CommitWorker::Init()
+         ALOGE("ENABLE_EBC_OVERLAY failed\n");
+     }
+ 
+-    pthread_mutex_init(&win_info_lock, NULL);
++    //pthread_mutex_init(&win_info_lock, NULL);
+ 
+     update_enable = false;
+     return InitWorker();
+@@ -301,23 +301,23 @@ void CommitWorker::setPenColor(int color)
+ 
+ void CommitWorker::set_point_info(int x, int y)
+ {
+-    pthread_mutex_lock(&win_info_lock);
++    //pthread_mutex_lock(&win_info_lock);
+     last_x = x;
+     last_y = y;
+-    update_enable = true;
++    //update_enable = true;
+     win_info.left = x;
+     win_info.right = x;
+     win_info.top = y;
+     win_info.bottom = y;
+-    pthread_mutex_unlock(&win_info_lock);
++    //pthread_mutex_unlock(&win_info_lock);
+ }
+ 
+ void CommitWorker::set_win_info(int x, int y)
+ {
+-    pthread_mutex_lock(&win_info_lock);
++    //pthread_mutex_lock(&win_info_lock);
+     last_x = x;
+     last_y = y;
+-    update_enable = true;
++    //update_enable = true;
+     if(win_info.left > x)
+         win_info.left = x;
+     if(win_info.right < x)
+@@ -326,7 +326,7 @@ void CommitWorker::set_win_info(int x, int y)
+         win_info.top = y;
+     if(win_info.bottom < y)
+         win_info.bottom = y;
+-    pthread_mutex_unlock(&win_info_lock);
++    //pthread_mutex_unlock(&win_info_lock);
+ }
+ 
+ void CommitWorker::set_first_win_info()
+@@ -335,18 +335,49 @@ void CommitWorker::set_first_win_info()
+     win_info.right = last_x;
+     win_info.top = last_y;
+     win_info.bottom = last_y;
+-    update_enable = false;
++    //update_enable = false;
+ }
+ 
+ void CommitWorker::init_draw_win_info(int x1, int y1, int x2, int y2)
+ {
+     ALOGE("Flash test : +++++++++++++ native_init() read init_draw_win_info(%d, %d, %d, %d)\n", x1, y1, x2, y2);
+-    pthread_mutex_lock(&win_info_lock);
++    //pthread_mutex_lock(&win_info_lock);
+     win_info.left = x1;
+     win_info.right = x2;
+     win_info.top = y1;
+     win_info.bottom = y2;
+-    pthread_mutex_unlock(&win_info_lock);
++    //pthread_mutex_unlock(&win_info_lock);
++}
++
++void CommitWorker::drawBuf(void)
++{
++        struct ebc_buf_info_t buf_info;
++        //nsecs_t start = systemTime(SYSTEM_TIME_MONOTONIC);
++
++        buf_info.win_x1 = win_info.left - pen_width >= 0 ? win_info.left - pen_width : 0;
++        buf_info.win_y1 = win_info.top - pen_width >= 0 ? win_info.top - pen_width : 0;
++        buf_info.win_x2 = win_info.right + pen_width <= ebc_buf_info.width ? win_info.right + pen_width : ebc_buf_info.width;
++        buf_info.win_y2 = win_info.bottom + pen_width <= ebc_buf_info.height ? win_info.bottom + pen_width : ebc_buf_info.height;
++        set_first_win_info();
++        unsigned long vaddr_real = intptr_t(ebc_buffer_base);
++
++        Rect rect = Rect(buf_info.win_x1, buf_info.win_y1, buf_info.win_x2, buf_info.win_y2);
++        Region region = Region(rect);
++        buf_info.epd_mode = EPD_OVERLAY;
++
++        if (ebc_buf_info.panel_color == 2)
++            Rgb888_to_color_eink2((char *)gray16_buffer, (int *)rgba_buffer, ebc_buf_info.height, ebc_buf_info.width, ebc_buf_info.width, &rect);
++        else
++            gray256_to_gray2_fix((uint8_t *)(gray16_buffer), (uint8_t *)rgba_buffer, ebc_buf_info.height, ebc_buf_info.width,ebc_buf_info.width,region,pen_color);
++
++        if(ioctl(ebc_fd, EBC_SEND_OSD_BUFFER,&buf_info)!=0) {
++            fprintf(stderr,"SET_EBC_SEND_BUFFER failed\n");
++            return;
++        }
++        //nsecs_t end = systemTime(SYSTEM_TIME_MONOTONIC);
++        //ALOGD("latency test:buf transfer,time=%0.3fms\n", (end - start) * 0.000001f);
++        return;
++
+ }
+ 
+ void CommitWorker::Routine()
+@@ -369,14 +400,14 @@ void CommitWorker::Routine()
+         }
+ 
+         struct ebc_buf_info_t buf_info;
+-
+-        pthread_mutex_lock(&win_info_lock);
++        //nsecs_t start = systemTime(SYSTEM_TIME_MONOTONIC);
++        //pthread_mutex_lock(&win_info_lock);
+         buf_info.win_x1 = win_info.left - pen_width >= 0 ? win_info.left - pen_width : 0;
+         buf_info.win_y1 = win_info.top - pen_width >= 0 ? win_info.top - pen_width : 0;
+         buf_info.win_x2 = win_info.right + pen_width <= ebc_buf_info.width ? win_info.right + pen_width : ebc_buf_info.width;
+         buf_info.win_y2 = win_info.bottom + pen_width <= ebc_buf_info.height ? win_info.bottom + pen_width : ebc_buf_info.height;
+         set_first_win_info();
+-        pthread_mutex_unlock(&win_info_lock);
++        //pthread_mutex_unlock(&win_info_lock);
+         unsigned long vaddr_real = intptr_t(ebc_buffer_base);
+ 
+         Rect rect = Rect(buf_info.win_x1, buf_info.win_y1, buf_info.win_x2, buf_info.win_y2);
+@@ -392,6 +423,8 @@ void CommitWorker::Routine()
+             fprintf(stderr,"SET_EBC_SEND_BUFFER failed\n");
+             return;
+         }
++        //nsecs_t end = systemTime(SYSTEM_TIME_MONOTONIC);
++        //ALOGD("latency test: buf transfer, time=%0.3fms", (end - start) * 0.000001f);
+         return;
+     } else {
+         int ret = Unlock();
+diff --git a/paintworker/commitworker.h b/paintworker/commitworker.h
+index 77ba6a0..dacc496 100755
+--- a/paintworker/commitworker.h
++++ b/paintworker/commitworker.h
+@@ -120,6 +120,7 @@ public:
+     void init_draw_win_info(int x1, int y1, int x2, int y2);
+     void setPenWidth(int width);
+     void setPenColor(int color);
++    void drawBuf(void);
+     void clearScreen(bool isSendBuffer);
+     void dump(void);
+     void IsOverlayEnable(bool isOverlayEnable);
+diff --git a/paintworker/getevent.cpp b/paintworker/getevent.cpp
+index 56ed225..1ed6287 100755
+--- a/paintworker/getevent.cpp
++++ b/paintworker/getevent.cpp
+@@ -86,6 +86,10 @@ static int open_device(const char* device)
+         fprintf(stderr, "out of memory\n");
+         return -1;
+     }
++
++    unsigned int clockId = CLOCK_MONOTONIC;
++    ioctl(fd, EVIOCSCLOCKID, &clockId);
++
+     device_names = new_device_names;
+     ufds[nfds].fd = fd;
+     ufds[nfds].events = POLLIN;
+diff --git a/paintworker/paintworker.cpp b/paintworker/paintworker.cpp
+index 6f9adbb..d17e0fd 100755
+--- a/paintworker/paintworker.cpp
++++ b/paintworker/paintworker.cpp
+@@ -335,6 +335,9 @@ void PaintWorker::Routine()
+     }
+ 
+     if (get_event(&e, 500) == 0) {
++        //nsecs_t ev = systemTime(SYSTEM_TIME_MONOTONIC);
++	 //long te = static_cast<long>(e.time.tv_sec) * 1000000 + e.time.tv_usec;
++
+         /*
+         *  read axis (x, y)
+         */
+@@ -393,9 +396,10 @@ void PaintWorker::Routine()
+                 if(!mIsFilterFixedArea) {
+                     //ALOGD("---start drawline --x=%d--y=%d \n", x, y);
+                     if(x > win_x1 && x < win_x2 && y > win_y1 && y < win_y2) {
+-                        if(lastX != 0 || lastY != 0) {
++                        if(lastX == 0 && lastY == 0)
++                            commitWorker.set_point_info(x, y);
++                        else
+                             Move(x, y);
+-                        }
+                         lastX = x;
+                         lastY = y;
+                     } else {
+@@ -406,9 +410,10 @@ void PaintWorker::Routine()
+                     if(x > win_x1 && x < win_x2 && y > win_y1 && y < win_y2 &&
+                        !(x > filter_fixed_x1 && x < filter_fixed_x2 && y > filter_fixed_y1 && y < filter_fixed_y2)) {
+                         //ALOGD("---start drawline -lastX=%d--lastY=%d--x=%d--y=%d \n",lastX,lastY,x,y);
+-                        if(lastX != 0 || lastY != 0) {
++                        if(lastX == 0 && lastY == 0)
++                            commitWorker.set_point_info(x, y);
++                        else
+                             Move(x, y);
+-                        }
+                         lastX = x;
+                         lastY = y;
+                     } else if((!(x > filter_fixed_x1 && x < filter_fixed_x2
+@@ -422,6 +427,9 @@ void PaintWorker::Routine()
+                     }
+                 }
+             }
++            //nsecs_t end = systemTime(SYSTEM_TIME_MONOTONIC);
++            //ALOGD("latency test : event latency = %0.3fms\n", (ev - (te*1000)) * 0.000001f);
++            //ALOGD("latency test: drawcanvas, time=%0.3fms\n", (end - ev) * 0.000001f);
+         }
+     }
+     return;
+@@ -636,7 +644,7 @@ void PaintWorker::Move(int x, int y)
+     canvas->drawLine(lastX, lastY, x, y, mPaint);
+     commitWorker.set_win_info(x, y);
+     if (x != lastX || y != lastY)
+-        commitWorker.Signal();
++        commitWorker.drawBuf();
+     point.x = x;
+     point.y = y;
+     point.pressedValue = m_pressed_value;
+-- 
+2.17.1
+

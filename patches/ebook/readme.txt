@@ -1,3 +1,50 @@
+rkr7_patches4补丁说明：
+lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs4$ tree
+.
+├── device
+│   └── rockchip
+│       └── rk356x
+│           └── 0001-sepolicy_ebook-add-property-sys.diff.percent.patch      //增加sys.diff.percent属性，设置全刷比例，根据前后帧的差异比决定是否全刷，0不生效，有效值1到100
+├── hardware
+│   └── rockchip
+│       └── hwcomposer
+│           └── einkhwc
+│               ├── 0001-einkcompositorworker-add-waveform-check.patch      //增加波形文件版本号识别，避免4bit的波形文件启用regal模式
+│               ├── 0002-add-diff-percent-check.patch                       //增加sys.diff.percent属性功能
+│               └── 0003-fix-force-full-twice-under-regal-mode.patch        //解决regal模式下force full会全刷两次问题
+├── kernel
+│   ├── 0001-drm-rockchip-ebc_dev-release-version-v2.27.patch
+│   ├── 0002-drm-rockchip-ebc_dev-release-version-v2.28.patch
+│   ├── 0003-drm-rockchip-ebc_dev-release-version-v3.00.patch
+│   ├── 0004-arm64-dts-rockchip-update-wacom-touch-i2c-clock-freq.patch
+│   ├── 0005-arm64-dts-rk3566-eink-update-gpu-opp-table.patch
+│   ├── 0006-drm-rockchip-ebc_dev-release-version-v3.01.patch
+│   ├── 0007-drm-rockchip-ebc_dev-release-version-v3.02.patch
+│   ├── 0008-drm-rockchip-ebc_dev-release-version-v3.03.patch
+│   ├── 0009-drm-rockchip-ebc_dev-release-version-v3.04.patch
+│   ├── 0010-drm-rockchip-ebc_dev-release-version-v3.05.patch     //ebc驱动及相关更新，提高手写速度，提升响应速度等
+│   ├── 0011-drivers-input-sensor-dev-support-wakeup.patch        //sensor架构更新，支持lite唤醒
+│   └── 0012-drivers-input-gsensor-mxc6655xa-support-orientation-.patch    //gsensor mxc6655xa驱动更新，支持lite旋转唤醒
+├── packages
+│   └── apps
+│       └── NoteDemo //手写应用更新，提升手写速度，解决待机cpu占用率高问题，解决闪退问题
+│           ├── 0001-fix-unmmap-err.patch
+│           ├── 0002-paintworker-improve-handwrite-speed-add-latency-log.patch
+│           ├── 0003-paintwork-fix-issue-paintworker-routine-function-cau.patch
+│           ├── 0004-Some-code-sorting.patch
+│           ├── 0005-NoteDemo-fix-app-crash-by-initFlag-always-true-after.patch
+│           ├── 0006-NoteDemo-fix-memory-leak.patch
+├── rkbin
+│   ├── 0001-rk3566-ddr-update-ultra-ddr-bin-to-v1.10.patch  //更新ultra稳定性问题，修复部分lpddr4x颗粒稳定性问题
+│   └── 0002-rk3566-bl31-ultra-update-version-to-v2.12.patch //解决ultra唤醒背光闪问题，需要同时修改硬件，没有背光功能的不受影响
+└── u-boot
+    ├── 0001-drivers-rk_eink-add-more-waveform-version-for-pvi.patch  //支持更多版本的波形文件
+        └── 0002-configs-rk3566-eink-enable-CONFIG_GPIO_KEY.patch     //开启gpio key功能
+
+        13 directories, 26 files
+
+--------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------
 rkr7_patches3补丁说明：
 lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs3$ tree
 .
