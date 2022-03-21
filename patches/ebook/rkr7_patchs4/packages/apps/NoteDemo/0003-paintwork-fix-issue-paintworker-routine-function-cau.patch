@@ -1,0 +1,37 @@
+From 261e3e9c9d5083906178821f54a88d5a7a89d5fd Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 16 Feb 2022 14:55:22 +0800
+Subject: [PATCH 3/5] paintwork: fix issue: paintworker routine function cause
+ CPU usage high when isHandwritingEnable false
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I8f91fbe46e1c35756e12cb2ba5dc9ed7966a0b64
+---
+ paintworker/paintworker.cpp | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/paintworker/paintworker.cpp b/paintworker/paintworker.cpp
+index d17e0fd..b73c074 100755
+--- a/paintworker/paintworker.cpp
++++ b/paintworker/paintworker.cpp
+@@ -329,12 +329,13 @@ int PaintWorker::Redo(int left, int top, int right, int bottom)
+ void PaintWorker::Routine()
+ {
+     input_event e;
+-    if(!isHandwritingEnable) {
+-        //ALOGD("disable handwriting\n");
+-        return;
+-    }
+ 
+     if (get_event(&e, 500) == 0) {
++        if(!isHandwritingEnable) {
++            //ALOGD("disable handwriting\n");
++            return;
++        }
++
+         //nsecs_t ev = systemTime(SYSTEM_TIME_MONOTONIC);
+ 	 //long te = static_cast<long>(e.time.tv_sec) * 1000000 + e.time.tv_usec;
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,26 @@
+From b44498388273de0647ff82101dd1b49dcc5f63f5 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Thu, 24 Feb 2022 16:33:33 +0800
+Subject: [PATCH] sepolicy_ebook: add property sys.diff.percent
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I3bb5f78ae2d0e0d55a079e23b0ca33a6e907c26a
+---
+ sepolicy_ebook/property_contexts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sepolicy_ebook/property_contexts b/sepolicy_ebook/property_contexts
+index 2ff7bab..ce9b11d 100644
+--- a/sepolicy_ebook/property_contexts
++++ b/sepolicy_ebook/property_contexts
+@@ -11,6 +11,7 @@ ro.need.white.with.standby      u:object_r:vendor_ebook_prop:s0
+ sys.dump                        u:object_r:vendor_ebook_prop:s0
+ sys.eink.                       u:object_r:vendor_ebook_prop:s0
+ sys.gray.gammalevel             u:object_r:vendor_ebook_prop:s0
++sys.diff.percent                u:object_r:vendor_ebook_prop:s0
+ sys.hwc.time                    u:object_r:vendor_ebook_prop:s0
+ sys.hwc.log                     u:object_r:vendor_ebook_prop:s0
+ sys.hwc.fps                     u:object_r:vendor_ebook_prop:s0
+-- 
+2.17.1
+

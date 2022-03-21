@@ -1,0 +1,23 @@
+From 236bde88164340844f51272191ae842936b23172 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Thu, 17 Feb 2022 15:27:28 +0800
+Subject: [PATCH] configs: rk3566-eink: enable CONFIG_GPIO_KEY
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Ief0047de7933229a60b4dd37ee1623138b6c484b
+---
+ configs/rk3566-eink.config | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configs/rk3566-eink.config b/configs/rk3566-eink.config
+index 517c396c2b..a5e4c42bce 100644
+--- a/configs/rk3566-eink.config
++++ b/configs/rk3566-eink.config
+@@ -9,3 +9,4 @@ CONFIG_ROCKCHIP_EINK=y
+ CONFIG_ROCKCHIP_TPS65185=y
+ CONFIG_TRUST_INI="RK3566TRUST_ULTRA.ini"
+ CONFIG_OPTEE_ALWAYS_USE_SECURITY_PARTITION=y
++CONFIG_GPIO_KEY=y
+-- 
+2.17.1
+

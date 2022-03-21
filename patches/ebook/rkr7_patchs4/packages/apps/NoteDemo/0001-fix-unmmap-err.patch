@@ -1,0 +1,27 @@
+From 705f6b1170edba1f5f7e8d0b1c9b1e8118622505 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Fri, 14 Jan 2022 17:38:58 +0800
+Subject: [PATCH 1/5] fix unmmap err
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Idf335e3a609c7a82ceb66780fe98653ad8be7805
+---
+ paintworker/commitworker.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/paintworker/commitworker.cpp b/paintworker/commitworker.cpp
+index 39e1e09..19604c3 100755
+--- a/paintworker/commitworker.cpp
++++ b/paintworker/commitworker.cpp
+@@ -240,7 +240,7 @@ CommitWorker::~CommitWorker()
+         close(ebc_fd);
+     }
+     if(ebc_buffer_base != NULL) {
+-        munmap(ebc_buffer_base, EINK_FB_SIZE * 4);
++        munmap(ebc_buffer_base, EINK_FB_SIZE * 5);
+         ebc_buffer_base = NULL;
+     }
+     if(rgba_buffer != NULL) {
+-- 
+2.17.1
+

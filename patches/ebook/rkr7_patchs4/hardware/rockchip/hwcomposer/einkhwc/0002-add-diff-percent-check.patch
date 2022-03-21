@@ -1,0 +1,103 @@
+From 88fbaf6b0389a4aef27cc33462a8c39f37f4f75a Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Thu, 24 Feb 2022 16:56:03 +0800
+Subject: [PATCH 2/3] add diff percent check
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I5e8c6d380d2ceae748de289511894728cfb2a66c
+---
+ einkcompositorworker.cpp | 20 ++++++++++++++++++++
+ einkcompositorworker.h   |  3 +++
+ hwcomposer.cpp           |  3 ++-
+ 3 files changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index f03b496..6a5c38d 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -833,6 +833,8 @@ int EinkCompositorWorker::PostEinkY8(int *buffer, Rect rect, int mode){
+ 
+ static int not_fullmode_num = 500;
+ static int curr_not_fullmode_num = -1;
++static int prev_diff_percent = 0;
++static int cur_diff_percent = 0;
+ 
+ int EinkCompositorWorker::ConvertToColorEink2(const buffer_handle_t &fb_handle){
+ 
+@@ -1248,6 +1250,22 @@ int EinkCompositorWorker::update_fullmode_num(){
+   return 0;
+ }
+ 
++int EinkCompositorWorker::update_diff_percent_num(){
++  char value[PROPERTY_VALUE_MAX];
++  property_get("sys.diff.percent",value,"0");
++
++  cur_diff_percent = atoi(value);
++  if (prev_diff_percent != cur_diff_percent) {
++    if(ioctl(ebc_fd, EBC_SET_DIFF_PERCENT, &cur_diff_percent) != 0) {
++        ALOGE("EBC_SET_DIFF_PERCENT failed\n");
++        return -1;
++    }
++    prev_diff_percent = cur_diff_percent;
++  }
++  return 0;
++}
++
++
+ int EinkCompositorWorker::SetColorEinkMode(EinkComposition *composition) {
+   ATRACE_CALL();
+ 
+@@ -1269,6 +1287,7 @@ int EinkCompositorWorker::SetColorEinkMode(EinkComposition *composition) {
+       break;
+   }
+   update_fullmode_num();
++  update_diff_percent_num();
+ 
+   return 0;
+ }
+@@ -1324,6 +1343,7 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+       break;
+   }
+   update_fullmode_num();
++  update_diff_percent_num();
+ 
+   return 0;
+ }
+diff --git a/einkcompositorworker.h b/einkcompositorworker.h
+index f20b16e..7816e7f 100755
+--- a/einkcompositorworker.h
++++ b/einkcompositorworker.h
+@@ -138,6 +138,8 @@ struct win_coordinate{
+ #define EBC_SET_FULL_MODE_NUM	(0x7003)
+ #define EBC_ENABLE_OVERLAY		(0x7004)
+ #define EBC_DISABLE_OVERLAY		(0x7005)
++#define EBC_GET_DSP_BUF_NUM	(0x700c)
++#define EBC_SET_DIFF_PERCENT	(0x700d)
+ 
+ class EinkCompositorWorker : public Worker {
+  public:
+@@ -177,6 +179,7 @@ class EinkCompositorWorker : public Worker {
+   int Y4Commit(int epd_mode);
+   int A2Commit(int epd_mode);
+   int update_fullmode_num();
++  int update_diff_percent_num();
+   int DumpEinkSurface(int *buffer);
+   int PostEink(int *buffer, Rect rect, int mode);
+   int PostEinkY8(int *buffer, Rect rect, int mode);
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index 6e8355c..e6d1059 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -181,7 +181,8 @@ struct win_coordinate{
+ #define EBC_SET_FULL_MODE_NUM    (0x7003)
+ #define EBC_ENABLE_OVERLAY        (0x7004)
+ #define EBC_DISABLE_OVERLAY        (0x7005)
+-
++#define EBC_GET_DSP_BUF_NUM	(0x700c)
++#define EBC_SET_DIFF_PERCENT	(0x700d)
+ #endif
+ 
+ #define POWEROFF_IMAGE_PATH_USER "/data/misc/poweroff.png"
+-- 
+2.17.1
+
