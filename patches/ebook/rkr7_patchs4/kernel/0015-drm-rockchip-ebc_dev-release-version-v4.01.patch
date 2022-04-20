@@ -1,0 +1,73 @@
+From ea77f1f34b6bc8566e37d57fc37be8944bae15a1 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Fri, 8 Apr 2022 11:55:13 +0800
+Subject: [PATCH] drm/rockchip: ebc_dev: release version v4.01
+
+disabled new frame waiting time default
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Ic456f53b47a7382448c41dcd14e8e6ed11aaaec1
+---
+ drivers/gpu/drm/rockchip/ebc-dev/ebc_dev_v8.S | 22 +++++++++----------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/ebc-dev/ebc_dev_v8.S b/drivers/gpu/drm/rockchip/ebc-dev/ebc_dev_v8.S
+index 0f73e9aa6c73b..9bc64986c4a0e 100644
+--- a/drivers/gpu/drm/rockchip/ebc-dev/ebc_dev_v8.S
++++ b/drivers/gpu/drm/rockchip/ebc-dev/ebc_dev_v8.S
+@@ -6922,14 +6922,10 @@ ebc_probe:
+ 	str	wzr, [x19, 44]
+ 	.loc 1 2465 0
+ 	str	wzr, [x19, 56]
+-	.loc 1 2467 0
+-	mov	w1, 80
+-	.loc 1 2463 0
+-	str	wzr, [x19, 100]
+ 	.loc 1 2466 0
+ 	mov	w26, 1
+-	.loc 1 2467 0
+-	str	w1, [x19, 260]
++	.loc 1 2463 0
++	str	wzr, [x19, 100]
+ .LBB1622:
+ .LBB1619:
+ 	.loc 4 43 0
+@@ -6944,19 +6940,21 @@ ebc_probe:
+ 	add	x1, x1, :lo12:.LC56
+ .LBE1620:
+ .LBE1623:
+-	.loc 1 2466 0
+-	str	w26, [x19, 264]
++	.loc 1 2467 0
++	str	wzr, [x19, 260]
+ 	.loc 1 2474 0
+ 	add	x24, x20, 672
+ .LVL605:
++	.loc 1 2466 0
++	str	w26, [x19, 264]
++	.loc 1 2475 0
++	adrp	x27, jiffies
+ 	.loc 1 2461 0
+ 	str	wzr, [x19, 656]
+ 	.loc 1 2475 0
+-	adrp	x27, jiffies
++	mov	x28, 268435455
+ 	.loc 1 2462 0
+ 	str	wzr, [x19, 660]
+-	.loc 1 2475 0
+-	mov	x28, 268435455
+ .LBB1624:
+ .LBB1621:
+ 	.loc 4 42 0
+@@ -10754,7 +10752,7 @@ __exitcall_ebc_exit:
+ 	.string	"%d\n"
+ 	.zero	4
+ .LC23:
+-	.string	"4.00"
++	.string	"4.01"
+ 	.zero	3
+ .LC24:
+ 	.string	"%s\n"
+-- 
+2.17.1
+

@@ -12,6 +12,10 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs4$ tree
 │               ├── 0001-einkcompositorworker-add-waveform-check.patch      //增加波形文件版本号识别，避免4bit的波形文件启用regal模式
 │               ├── 0002-add-diff-percent-check.patch                       //增加sys.diff.percent属性功能
 │               └── 0003-fix-force-full-twice-under-regal-mode.patch        //解决regal模式下force full会全刷两次问题
+│               ├── 0004-update-for-new-ebc.patch		//此版本开始不在支持Y8 buf，有需要的单独找RK；增加sys.eink.waiting.time属性用于设置帧等待时间，对于一些点击切换页面的场景，通过设置这个时间，单位ms，可以提升响应速度，默认关闭该功能；
+│               ├── 0005-revert-skip-count-set-when-suspend-and-resume.patch  //解决刚唤醒的前几帧，刷新率低问题
+│               ├── 0006-Revert-fix-weifeng-color-panel.patch	//revert威锋彩屏的算法代码，保留原来的。
+│               └── 0007-Eink-every-frame-update-must-ensure-that-there-is-an.patch		//避免唤醒时概率性先显示系统图像再显示锁屏密码界面
 ├── kernel
 │   ├── 0001-drm-rockchip-ebc_dev-release-version-v2.27.patch
 │   ├── 0002-drm-rockchip-ebc_dev-release-version-v2.28.patch
@@ -25,6 +29,17 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs4$ tree
 │   ├── 0010-drm-rockchip-ebc_dev-release-version-v3.05.patch     //ebc驱动及相关更新，提高手写速度，提升响应速度等
 │   ├── 0011-drivers-input-sensor-dev-support-wakeup.patch        //sensor架构更新，支持lite唤醒
 │   └── 0012-drivers-input-gsensor-mxc6655xa-support-orientation-.patch    //gsensor mxc6655xa驱动更新，支持lite旋转唤醒
+│   ├── 0013-drm-rockchip-ebc_dev-tps65185-clear-shadow-when-resu.patch  //解决部分屏唤醒后tps65185电源异常
+│   ├── 0014-drm-rockchip-ebc_dev-release-version-4.00.patch
+│   ├── 0015-drm-rockchip-ebc_dev-release-version-v4.01.patch
+│   ├── 0016-drm-rockchip-ebc_dev-release-version-v4.02.patch
+│   ├── 0017-drm-rockchip-ebc_dev-release-version-v4.03.patch
+│   ├── 0018-drm-rockchip-ebc_dev-release-version-v4.04.patch
+│   └── 0019-drm-rockchip-ebc_dev-release-version-v4.05.patch    //ebc驱动及相关更新，调整一些代码架构；优化手写模式下的背景更新残影严重问题，优化手写模式下背景更新控制机制；待机下的logo图片更新采用part模式；
+│   └── 0020-drm-rockchip-ebc_dev-release-version-v4.06.patch    //增加dts配置，panel,disable_logo, 用于关闭rk的待机和关机logo机制，使用客户自己的logo显示机制
+│   ├── 0021-drm-rockchip-ebc_dev-release-version-v4.07.patch   //增加overlay状态获取，通过ioctl获取驱动的overlay状态，int overlay_status; ioctl(ebc_fd, EBC_GET_OVERLAY_STATUS, &overlay_status)；0：disable  1: enable
+│   └── 0022-drm-rockchip-ebc_dev-release-version-v4.08.patch   //增加overlay模式下的背景更新控制，通过ioctl控制，使能控制：ioctl(ebc_fd, EBC_ENABLE_BG_CONTROL, NULL)；关闭控制：ioctl(ebc_fd, EBC_DISABLE_BG_CONTROL, NULL)；
+						     //默认是使能控制的，这样overlay模式下，背景的更新机制与非overlay模式下一致；关闭控制后，背景更新会更快，类似auto模式；
 ├── packages
 │   └── apps
 │       └── NoteDemo //手写应用更新，提升手写速度，解决待机cpu占用率高问题，解决闪退问题
@@ -39,9 +54,10 @@ lyx@ubuntu:~/rk3566-11-eink/RKDocs/android/patches/ebook/rkr7_patchs4$ tree
 │   └── 0002-rk3566-bl31-ultra-update-version-to-v2.12.patch //解决ultra唤醒背光闪问题，需要同时修改硬件，没有背光功能的不受影响
 └── u-boot
     ├── 0001-drivers-rk_eink-add-more-waveform-version-for-pvi.patch  //支持更多版本的波形文件
-        └── 0002-configs-rk3566-eink-enable-CONFIG_GPIO_KEY.patch     //开启gpio key功能
+    ├── 0002-configs-rk3566-eink-enable-CONFIG_GPIO_KEY.patch    //开启gpio key功能
+    └── 0003-video-rk_ebc-revert-DSP_HS_END-2-to-fix-XLE-on-delay.patch  //修复时序问题
 
-        13 directories, 26 files
+       13 directories, 41 files
 
 --------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------

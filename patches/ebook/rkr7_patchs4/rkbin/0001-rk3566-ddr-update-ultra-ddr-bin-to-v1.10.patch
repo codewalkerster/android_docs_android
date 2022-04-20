@@ -1,4 +1,4 @@
-From 33980154868b83f284284ffc813fb0eeb64b0db9 Mon Sep 17 00:00:00 2001
+From 5ff0fb5f7153a6a0f5f598903b09c34bf66e6c8f Mon Sep 17 00:00:00 2001
 From: Tang Yun ping <typ@rock-chips.com>
 Date: Fri, 7 Jan 2022 17:45:07 +0800
 Subject: [PATCH] rk3566: ddr: update ultra ddr bin to v1.10
@@ -14,19 +14,19 @@ update feature:
 Signed-off-by: Tang Yun ping <typ@rock-chips.com>
 Change-Id: I972508ee09681271b31b720d49610c86680e3f94
 ---
- RKBOOT/RK3566MINIALL_ULTRA.ini                |   6 +++---
+ RKBOOT/RK3566MINIALL_ULTRA.ini                |   4 ++--
  ...bin => rk3566_ddr_1056MHz_ultra_v1.10.bin} | Bin 47104 -> 47104 bytes
  ....bin => rk3566_ddr_528MHz_ultra_v1.10.bin} | Bin 47104 -> 47104 bytes
  ....bin => rk3566_ddr_780MHz_ultra_v1.10.bin} | Bin 47104 -> 47104 bytes
  ....bin => rk3566_ddr_920MHz_ultra_v1.10.bin} | Bin 47104 -> 47104 bytes
- 5 files changed, 3 insertions(+), 3 deletions(-)
+ 5 files changed, 2 insertions(+), 2 deletions(-)
  rename bin/rk35/{rk3566_ddr_1056MHz_ultra_v1.09.bin => rk3566_ddr_1056MHz_ultra_v1.10.bin} (79%)
  rename bin/rk35/{rk3566_ddr_528MHz_ultra_v1.09.bin => rk3566_ddr_528MHz_ultra_v1.10.bin} (79%)
  rename bin/rk35/{rk3566_ddr_780MHz_ultra_v1.09.bin => rk3566_ddr_780MHz_ultra_v1.10.bin} (79%)
  rename bin/rk35/{rk3566_ddr_920MHz_ultra_v1.09.bin => rk3566_ddr_920MHz_ultra_v1.10.bin} (79%)
 
 diff --git a/RKBOOT/RK3566MINIALL_ULTRA.ini b/RKBOOT/RK3566MINIALL_ULTRA.ini
-index ddbf31c0..b53f397b 100755
+index dbccf92..25d5d5c 100755
 --- a/RKBOOT/RK3566MINIALL_ULTRA.ini
 +++ b/RKBOOT/RK3566MINIALL_ULTRA.ini
 @@ -5,7 +5,7 @@ MAJOR=1
@@ -38,19 +38,15 @@ index ddbf31c0..b53f397b 100755
  Sleep=1
  [CODE472_OPTION]
  NUM=1
-@@ -14,10 +14,10 @@ Path1=bin/rk35/rk356x_usbplug_v1.14.bin
+@@ -14,7 +14,7 @@ Path1=bin/rk35/rk356x_usbplug_v1.10.bin
  NUM=2
  LOADER1=FlashData
  LOADER2=FlashBoot
 -FlashData=bin/rk35/rk3566_ddr_1056MHz_ultra_v1.09.bin
 +FlashData=bin/rk35/rk3566_ddr_1056MHz_ultra_v1.10.bin
- FlashBoot=bin/rk35/rk356x_spl_v1.12.bin
+ FlashBoot=bin/rk35/rk356x_spl_v1.11.bin
  [OUTPUT]
--PATH=rk356x_spl_loader_v1.09.112.bin
-+PATH=rk356x_spl_loader_v1.10.112.bin
- [SYSTEM]
- NEWIDB=true
- [FLAG]
+ PATH=rk356x_spl_loader_v1.09.111.bin
 diff --git a/bin/rk35/rk3566_ddr_1056MHz_ultra_v1.09.bin b/bin/rk35/rk3566_ddr_1056MHz_ultra_v1.10.bin
 similarity index 79%
 rename from bin/rk35/rk3566_ddr_1056MHz_ultra_v1.09.bin

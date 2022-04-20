@@ -1,0 +1,28 @@
+From df338d40e6ee64830b9a7ad7a129aedf8c977cb9 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Thu, 5 May 2022 17:36:20 +0800
+Subject: [PATCH] video: rk_ebc: revert DSP_HS_END +2 to fix XLE on delay
+ time(tLEdly)
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I6fe8876ddb046b26994953ff5dc95146af88ba9e
+---
+ drivers/video/rk_eink/rk_ebc_tcon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/video/rk_eink/rk_ebc_tcon.c b/drivers/video/rk_eink/rk_ebc_tcon.c
+index 5d9b366c8e..cb635e0529 100644
+--- a/drivers/video/rk_eink/rk_ebc_tcon.c
++++ b/drivers/video/rk_eink/rk_ebc_tcon.c
+@@ -259,7 +259,7 @@ static int ebc_tcon_enable(struct udevice *dev, struct ebc_panel *panel)
+ 	/* panel timing and win info config */
+ 	tcon_write(tcon, EBC_DSP_HTIMING0,
+ 		   DSP_HTOTAL(panel->lsl + panel->lbl + panel->ldl +
+-			      panel->lel) | DSP_HS_END(panel->lsl + 2));
++			      panel->lel) | DSP_HS_END(panel->lsl));
+ 	tcon_write(tcon, EBC_DSP_HTIMING1,
+ 		   DSP_HACT_END(panel->lsl + panel->lbl + panel->ldl) |
+ 		   DSP_HACT_ST(panel->lsl + panel->lbl - 1));
+-- 
+2.17.1
+

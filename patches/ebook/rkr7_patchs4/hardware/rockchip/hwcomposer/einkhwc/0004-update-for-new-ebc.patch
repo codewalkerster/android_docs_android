@@ -1,0 +1,206 @@
+From 0823963b94da53a8b87f9c7b41a6fd747b2419a0 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 6 Apr 2022 11:20:11 +0800
+Subject: [PATCH 1/4] update for new ebc
+
+1.regal mode is not support now, will support later version
+2.needpic: 1--can not be drop by ebc; 0--can be drop by ebc;
+3.add new buf control: use sys.eink.waiting.time to set new buf waiting
+time, ebc will wait the time set for new buf, disable default
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I9e2680ecc08464271422647a83ede9c835811135
+---
+ einkcompositorworker.cpp | 29 ++++++++++++++++++++++++-----
+ einkcompositorworker.h   | 10 +++++++---
+ hwcomposer.cpp           | 15 ++++++++++-----
+ 3 files changed, 41 insertions(+), 13 deletions(-)
+
+diff --git a/einkcompositorworker.cpp b/einkcompositorworker.cpp
+index 723b93f..1b61447 100755
+--- a/einkcompositorworker.cpp
++++ b/einkcompositorworker.cpp
+@@ -771,7 +771,9 @@ int EinkCompositorWorker::PostEink(int *buffer, Rect rect, int mode){
+   commit_buf_info.win_y1 = rect.top;
+   commit_buf_info.win_y2 = rect.bottom;
+   commit_buf_info.epd_mode = mode;
+-  commit_buf_info.needpic = 16;
++  commit_buf_info.needpic = 0;
++  if (mode == EPD_RESUME || mode == EPD_FORCE_FULL || mode == EPD_A2_ENTER)
++    commit_buf_info.needpic = 1;
+ 
+   ALOGD_IF(log_level(DBG_DEBUG),"%s, line = %d ,mode = %d, (x1,x2,y1,y2) = (%d,%d,%d,%d) ",
+             __FUNCTION__,__LINE__,mode,commit_buf_info.win_x1,commit_buf_info.win_x2,
+@@ -805,7 +807,7 @@ int EinkCompositorWorker::PostEinkY8(int *buffer, Rect rect, int mode){
+   commit_buf_info.win_y1 = rect.top;
+   commit_buf_info.win_y2 = rect.bottom;
+   commit_buf_info.epd_mode = mode;
+-  commit_buf_info.needpic = 32;
++  commit_buf_info.needpic = 0;
+ 
+   ALOGD_IF(log_level(DBG_DEBUG),"%s, line = %d ,mode = %d, (x1,x2,y1,y2) = (%d,%d,%d,%d) ",
+             __FUNCTION__,__LINE__,mode,commit_buf_info.win_x1,commit_buf_info.win_x2,
+@@ -835,6 +837,7 @@ static int not_fullmode_num = 500;
+ static int curr_not_fullmode_num = -1;
+ static int prev_diff_percent = 0;
+ static int cur_diff_percent = 0;
++static int wait_new_buf_time = 0;
+ 
+ int EinkCompositorWorker::ConvertToColorEink2(const buffer_handle_t &fb_handle){
+ 
+@@ -1227,7 +1230,7 @@ int EinkCompositorWorker::A2Commit(int epd_mode) {
+   Rect screen_rect = Rect(0, 0, ebc_buf_info.width, ebc_buf_info.height);
+   int *gray16_buffer_bak = gray16_buffer;
+   if((gLastEpdMode != EPD_A2) && (gLastEpdMode != EPD_A2_DITHER))
+-      epd_tmp_mode = EPD_A2_ENTER;
++      epd_tmp_mode = EPD_FORCE_FULL;
+   else
+       epd_tmp_mode = epd_mode;
+   PostEink(gray16_buffer_bak, screen_rect, epd_tmp_mode);
+@@ -1265,6 +1268,20 @@ int EinkCompositorWorker::update_diff_percent_num(){
+   return 0;
+ }
+ 
++int EinkCompositorWorker::update_waiting_time(){
++  char value[PROPERTY_VALUE_MAX];
++  property_get("sys.eink.waiting.time",value, "0");
++  int time_value = atoi(value);
++
++  if (wait_new_buf_time != time_value) {
++    if(ioctl(ebc_fd, EBC_WAIT_NEW_BUF_TIME, &time_value) != 0) {
++        ALOGE("EBC_WAIT_NEW_BUF_TIME failed\n");
++        return -1;
++    }
++    wait_new_buf_time = time_value;
++  }
++  return 0;
++}
+ 
+ int EinkCompositorWorker::SetColorEinkMode(EinkComposition *composition) {
+   ATRACE_CALL();
+@@ -1288,7 +1305,7 @@ int EinkCompositorWorker::SetColorEinkMode(EinkComposition *composition) {
+   }
+   update_fullmode_num();
+   update_diff_percent_num();
+-
++  update_waiting_time();
+   return 0;
+ }
+ 
+@@ -1326,6 +1343,7 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+     case EPD_FULL_GLR16:
+     case EPD_PART_GLD16:
+     case EPD_PART_GLR16:
++    #if 0 // new ebc no support regal mode now, will support later versions
+       if (waveform_fd > 0) {
+ 	   if (last_regal) {
+           	ConvertToY8Regal(composition->fb_handle);
+@@ -1338,6 +1356,7 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+           break;
+       }
+       FALLTHROUGH_INTENDED;
++    #endif
+     default:
+       ConvertToY4Dither(composition->fb_handle, composition->einkMode);
+       Y4Commit(composition->einkMode);
+@@ -1345,7 +1364,7 @@ int EinkCompositorWorker::SetEinkMode(EinkComposition *composition) {
+   }
+   update_fullmode_num();
+   update_diff_percent_num();
+-
++  update_waiting_time();
+   return 0;
+ }
+ 
+diff --git a/einkcompositorworker.h b/einkcompositorworker.h
+index 7816e7f..d942e0a 100755
+--- a/einkcompositorworker.h
++++ b/einkcompositorworker.h
+@@ -117,7 +117,7 @@ struct ebc_buf_info_t {
+ 	int win_y2;
+ 	int width_mm;
+ 	int height_mm;
+-	int needpic; //16 or 32
++	int needpic; // 1: buf can not be drop by ebc, 0: buf can drop by ebc
+ 	char tid_name[16];
+ };
+ 
+@@ -138,8 +138,11 @@ struct win_coordinate{
+ #define EBC_SET_FULL_MODE_NUM	(0x7003)
+ #define EBC_ENABLE_OVERLAY		(0x7004)
+ #define EBC_DISABLE_OVERLAY		(0x7005)
+-#define EBC_GET_DSP_BUF_NUM	(0x700c)
+-#define EBC_SET_DIFF_PERCENT	(0x700d)
++#define EBC_GET_OSD_BUFFER	(0x7006)
++#define EBC_SEND_OSD_BUFFER	(0x7007)
++#define EBC_NEW_BUF_PREPARE	(0x7008)
++#define EBC_SET_DIFF_PERCENT	(0x7009)
++#define EBC_WAIT_NEW_BUF_TIME (0x700a)
+ 
+ class EinkCompositorWorker : public Worker {
+  public:
+@@ -180,6 +183,7 @@ class EinkCompositorWorker : public Worker {
+   int A2Commit(int epd_mode);
+   int update_fullmode_num();
+   int update_diff_percent_num();
++  int update_waiting_time();
+   int DumpEinkSurface(int *buffer);
+   int PostEink(int *buffer, Rect rect, int mode);
+   int PostEinkY8(int *buffer, Rect rect, int mode);
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index e6d1059..232229b 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -159,7 +159,7 @@ struct ebc_buf_info {
+     int win_y2;
+     int width_mm;
+     int height_mm;
+-    int needpic; //16 or 32
++    int needpic; // 1: buf can not be drop by ebc, 0: buf can drop by ebc
+     char tid_name[16];
+ };
+ 
+@@ -181,8 +181,11 @@ struct win_coordinate{
+ #define EBC_SET_FULL_MODE_NUM    (0x7003)
+ #define EBC_ENABLE_OVERLAY        (0x7004)
+ #define EBC_DISABLE_OVERLAY        (0x7005)
+-#define EBC_GET_DSP_BUF_NUM	(0x700c)
+-#define EBC_SET_DIFF_PERCENT	(0x700d)
++#define EBC_GET_OSD_BUFFER	(0x7006)
++#define EBC_SEND_OSD_BUFFER	(0x7007)
++#define EBC_NEW_BUF_PREPARE	(0x7008)
++#define EBC_SET_DIFF_PERCENT	(0x7009)
++#define EBC_WAIT_NEW_BUF_TIME (0x700a)
+ #endif
+ 
+ #define POWEROFF_IMAGE_PATH_USER "/data/misc/poweroff.png"
+@@ -330,6 +333,8 @@ static int hwc_prepare(hwc_composer_device_1_t *dev, size_t num_displays,
+ 
+    UN_USED(dev);
+ 
++   ioctl(ebc_fd, EBC_NEW_BUF_PREPARE,NULL);
++
+    init_log_level();
+    for (int i = 0; i < (int)num_displays; ++i) {
+       if (!display_contents[i])
+@@ -2083,7 +2088,7 @@ int hwc_post_epd(int *buffer, Rect rect, int mode){
+   buf_info.win_y1 = rect.top;
+   buf_info.win_y2 = rect.bottom;
+   buf_info.epd_mode = mode;
+-  buf_info.needpic = 16;
++  buf_info.needpic = 1;
+ 
+ 
+   char value[PROPERTY_VALUE_MAX];
+@@ -2381,7 +2386,7 @@ static int hwc_set(hwc_composer_device_1_t *dev, size_t num_displays,
+   inc_frame();
+   char value[PROPERTY_VALUE_MAX];
+ 
+-  property_get("sys.eink.mode", value, "0");
++  property_get("sys.eink.mode", value, "7");
+   int requestEpdMode = atoi(value);
+ 
+   //Handle eink mode.
+-- 
+2.17.1
+

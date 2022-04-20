@@ -1,0 +1,31 @@
+From cd4f3ed3df62fc0ec42fce7ae1d7b0aa0466d945 Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Tue, 12 Apr 2022 15:19:55 +0800
+Subject: [PATCH 2/4] revert skip count set when suspend and resume
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: Icab800f42cbe01a312a1ed8b0ea7aaf2938b6fa2
+---
+ hwcomposer.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index 232229b..f2fe468 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -2332,10 +2332,10 @@ static int hwc_adajust_sf_vsync(int mode){
+       break;
+     case EPD_RESUME:
+       resume_count = 5;
+-      strcpy(refresh_skip_count, "29");
++      strcpy(refresh_skip_count, "5");
+       break;
+     case EPD_SUSPEND:
+-      strcpy(refresh_skip_count, "29");
++      strcpy(refresh_skip_count, "5");
+       break;
+     default:
+       strcpy(refresh_skip_count, "2");
+-- 
+2.17.1
+

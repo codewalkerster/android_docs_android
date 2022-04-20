@@ -1,0 +1,47 @@
+From 315fcf54a28a23addc49da534034023a69053a1d Mon Sep 17 00:00:00 2001
+From: Zorro Liu <lyx@rock-chips.com>
+Date: Wed, 13 Apr 2022 17:23:30 +0800
+Subject: [PATCH 3/4] Revert "fix weifeng color panel"
+
+This reverts commit a41e8d4c6751529d56d26d8d3dfbb64065683bc9.
+
+Signed-off-by: Zorro Liu <lyx@rock-chips.com>
+Change-Id: I46bab29e33ecb0a66d1a1c4b4945a3939cd13828
+---
+ hwcomposer.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/hwcomposer.cpp b/hwcomposer.cpp
+index f2fe468..242527d 100755
+--- a/hwcomposer.cpp
++++ b/hwcomposer.cpp
+@@ -1755,7 +1755,7 @@ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int
+ 		src_r1 = src;
+ 		src_r2 = src + vir_width;
+ 		int row_mod3 = i % 3;
+-		if (row_mod3 == 1) {
++		if (row_mod3 == 0) {
+ 			for (j = 0; j < w_div6; j++) {
+ 				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+ 				*dst_r1++ = r | (b<<4);
+@@ -1767,7 +1767,7 @@ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int
+ 				*dst_r1++ = b | (g<<4);
+ 				*dst_r2++ = r | (b<<4);
+ 			}
+-		} else if (row_mod3 == 2) {
++		} else if (row_mod3 == 1) {
+ 			for (j = 0; j < w_div6; j++) {
+ 				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+ 				*dst_r1++ = b | (g<<4);
+@@ -1779,7 +1779,7 @@ void Rgb888_to_color_eink2(char *dst, int *src, int fb_height, int fb_width, int
+ 				*dst_r1++ = g | (r<<4);
+ 				*dst_r2++ = b | (g<<4);
+ 			}
+-		} else if (row_mod3 == 0) {
++		} else if (row_mod3 == 2) {
+ 			for (j = 0; j < w_div6; j++) {
+ 				RGB888_AVG_RGB(src_r1, src_r2, r, g, b);
+ 				*dst_r1++ = g | (r<<4);
+-- 
+2.17.1
+
